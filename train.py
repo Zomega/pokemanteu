@@ -6,7 +6,7 @@ import keras
 from keras import layers
 import json
 import numpy as np
-import tensorflowjs as tfjs
+#import tensorflowjs as tfjs
 
 # --- CONFIGURATION ---
 FILES = ["en_US.tsv", "en_UK.tsv", "pokemon.tsv"]
@@ -189,7 +189,7 @@ def build_transformer(vocab_size, max_len, embed_dim=128, num_heads=4, ff_dim=12
 
 # 5. EXECUTION
 max_seq = 40
-(x_enc, x_dec), y_tgt = prepare_multitask_data("en_US.tsv", max_len=max_seq)
+(x_enc, x_dec), y_tgt = prepare_multitask_data(FILES, max_len=MAX_SEQ)
 
 model = build_transformer(len(vocab), max_seq)
 model.compile(optimizer="adam",
