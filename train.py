@@ -10,6 +10,7 @@ import numpy as np
 
 # 2. THE VOCABULARY & TOKENIZER
 # We define our own to ensure absolute consistency for JS export.
+# TODO: Just use lowercase.
 alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' -/"
 ipa_symbols = "ɪæəɑɔʊuːiːeɪaɪɔɪoʊaʊpbt dkfɡvθðszʃʒhtʃdʒmlrjŋ"
 special = "<>[] "  # < (G2P), > (P2G), [ (Start), ] (Stop), space (Padding)
@@ -85,9 +86,10 @@ def build_transformer(vocab_size, max_len, embed_dim=128, num_heads=4, ff_dim=12
 
     # Embeddings (Masking enabled)
     token_emb = layers.Embedding(vocab_size, embed_dim, mask_zero=True)(enc_in)
-    positions = layers.Lambda(lambda x: keras.ops.arange(
-        0, max_len, dtype="int32"))(enc_in)
-    pos_emb = layers.Embedding(max_len, embed_dim)(positions)
+    pos_emb_enc = layers.Embedding(max_len, embed_dim)
+    positions_enc = keras.ops.arange(0, max_len, dtype="int32")
+    pos_emb = pos_emb_enc(positions_enc)
+    pos_emb = keras.ops.expand_dims(pos_emb, axis=0)
 
     x = token_emb + pos_emb
     x = transformer_block(x, embed_dim, num_heads, ff_dim, rate)
@@ -98,9 +100,10 @@ def build_transformer(vocab_size, max_len, embed_dim=128, num_heads=4, ff_dim=12
 
     token_emb_dec = layers.Embedding(
         vocab_size, embed_dim, mask_zero=True)(dec_in)
-    positions_dec = layers.Lambda(lambda x: keras.ops.arange(
-        0, max_len-1, dtype="int32"))(dec_in)
-    pos_emb_dec = layers.Embedding(max_len, embed_dim)(positions_dec)
+    pos_emb_dec_layer = layers.Embedding(max_len - 1, embed_dim)
+    positions_dec = keras.ops.arange(0, max_len - 1, dtype="int32")
+    pos_emb_dec = pos_emb_dec_layer(positions_dec)
+    pos_emb_dec = keras.ops.expand_dims(pos_emb_dec, axis=0)
 
     y = token_emb_dec + pos_emb_dec
 
@@ -135,21 +138,40 @@ model = build_transformer(len(vocab), max_seq)
 model.compile(optimizer="adam",
               loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
-model.fit([x_enc, x_dec], y_tgt, batch_size=64,
-          epochs=10, validation_split=0.1)
+callbacks = [
+    # 1. Stop if validation loss doesn't improve for 2 epochs
+    keras.callbacks.EarlyStopping(
+        monitor='val_loss',
+        patience=2,
+        restore_best_weights=True
+    ),
+    # 2. Save the best model to disk immediately whenever we hit a new record
+    keras.callbacks.ModelCheckpoint(
+        filepath="best_poke_model.keras",
+        save_best_only=True,
+        monitor='val_loss',
+        verbose=1
+    )
+]
+
+model.fit([x_enc, x_dec], y_tgt,
+          batch_size=64,
+          epochs=10,
+          validation_split=0.1,
+          callbacks=callbacks)
 
 # 6. SAVE FOR JS
-model.save("poke_model.keras")
+model.save("poke_model_final.keras")
 with open("vocab.json", "w") as f:
     json.dump(vocab, f)
 
 
 # Reload the model using the TensorFlow backend to export for JS
-os.environ["KERAS_BACKEND"] = "tensorflow" 
+os.environ["KERAS_BACKEND"] = "tensorflow"
 import keras
 
 # Load the trained .keras file
-model = keras.models.load_model("poke_model.keras")
+model = keras.models.load_model("best_poke_model.keras")
 
 # Export to TF.js format (requires 'pip install tensorflowjs')
 # This creates a folder 'tfjs_model' you can upload to your web server
