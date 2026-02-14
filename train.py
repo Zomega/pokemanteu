@@ -2,69 +2,123 @@ import os
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
 
-from keras import layers
 import keras
+from keras import layers
 import json
 import numpy as np
+import tensorflowjs as tfjs
+
+# --- CONFIGURATION ---
+FILES = ["en_US.tsv", "en_UK.tsv", "pokemon.tsv"]
+MAX_SEQ = 40
+
+# 1. DYNAMIC VOCABULARY BUILDER
 
 
-# 2. THE VOCABULARY & TOKENIZER
-# We define our own to ensure absolute consistency for JS export.
-# TODO: Just use lowercase.
-# TODO: Load from training data! We're missing a lot.
-alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' -/"
-ipa_symbols = "ɪæəɑɔʊuːiːeɪaɪɔɪoʊaʊpbt dkfɡvθðszʃʒhtʃdʒmlrjŋ"
-special = "<>[] "  # < (G2P), > (P2G), [ (Start), ] (Stop), space (Padding)
+def build_vocab_from_files(file_paths):
+    """
+    Scans all files to find every unique character.
+    Returns: vocab (dict), inv_vocab (dict)
+    """
+    unique_chars = set()
 
-chars = sorted(list(set(alphabet + ipa_symbols + special)))
-vocab = {char: i + 1 for i, char in enumerate(chars)}
-vocab["[PAD]"] = 0
-inv_vocab = {i: char for char, i in vocab.items()}
+    # 1. Add our Special Control Tokens first (so they are never missed)
+    # < = Task: Word->IPA
+    # > = Task: IPA->Word
+    # [ = Start Generation
+    # ] = Stop Generation
+    special_tokens = ["<", ">", "[", "]"]
+    for t in special_tokens:
+        unique_chars.add(t)
 
+    print("Scanning files to build vocabulary...")
+    for fpath in file_paths:
+        if not os.path.exists(fpath):
+            print(f"Warning: {fpath} not found. Skipping.")
+            continue
+
+        with open(fpath, 'r', encoding='utf-8') as f:
+            for line in f:
+                parts = line.strip().split('\t')
+                if len(parts) != 2:
+                    continue
+
+                word_raw, ipa_raw = parts[0], parts[1]
+
+                # APPLY CLEANING RULES HERE (must match prepare_multitask_data)
+                word = word_raw.lower().strip()
+                ipa = ipa_raw.replace("/", "").strip()  # Remove IPA slashes
+
+                # Add chars to set
+                for c in word:
+                    unique_chars.add(c)
+                for c in ipa:
+                    unique_chars.add(c)
+
+    # Sort to ensure deterministic order
+    sorted_chars = sorted(list(unique_chars))
+
+    # Create Dicts. 0 is reserved for [PAD]
+    vocab = {char: i + 1 for i, char in enumerate(sorted_chars)}
+    vocab["[PAD]"] = 0
+
+    inv_vocab = {i: char for char, i in vocab.items()}
+
+    print(f"Vocabulary built! Found {len(vocab)} unique characters.")
+    return vocab, inv_vocab
+
+
+# Build it now
+vocab, inv_vocab = build_vocab_from_files(FILES)
+
+# Save it immediately
 with open("vocab.json", "w") as f:
     json.dump(vocab, f)
 
-def encode(text, max_len=40):
-    ids = [vocab[c] for c in text if c in vocab]
-    # 1. Truncate to ensure it never exceeds max_len
+
+def encode(text, max_len=MAX_SEQ):
+    ids = [vocab.get(c, vocab["[PAD]"]) for c in text]  # Use .get() to be safe
     ids = ids[:max_len]
-    # 2. Pad (this is now safe)
     return ids + [0] * (max_len - len(ids))
 
-# 3. DATA SERIALIZATION (The "Zip" Logic)
+# 2. DATA LOADING (Consolidated)
 
-# TODO: Strip // off the IPA representations.
-def prepare_multitask_data(file_path, max_len=40):
-    # Load your "word \t ipa" file
-    with open(file_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
 
+def prepare_multitask_data(file_paths, max_len=MAX_SEQ):
     encoder_inputs, decoder_inputs, decoder_targets = [], [], []
 
-    for line in lines:
-        parts = line.strip().split('\t')
-        if len(parts) != 2:
+    print("Processing data...")
+    for fpath in file_paths:
+        if not os.path.exists(fpath):
             continue
-        word, ipa = parts[0], parts[1]
 
-        # DIRECTION 1: English -> IPA (Task: <)
-        # Input: "<word", Target: "[ipa]"
-        src_g2p = f"<{word}"
-        tgt_g2p = f"[{ipa}]"
+        with open(fpath, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
 
-        # DIRECTION 2: IPA -> English (Task: >)
-        # Input: ">ipa", Target: "[word]"
-        src_p2g = f">{ipa}"
-        tgt_p2g = f"[{word}]"
+        for line in lines:
+            parts = line.strip().split('\t')
+            if len(parts) != 2:
+                continue
 
-        for src, tgt in [(src_g2p, tgt_g2p), (src_p2g, tgt_p2g)]:
-            e_idx = encode(src, max_len)
-            t_idx = encode(tgt, max_len)
+            # --- CLEANING RULES (Must match Vocab Builder) ---
+            word = parts[0].lower().strip()
+            ipa = parts[1].replace("/", "").strip()
 
-            encoder_inputs.append(e_idx)
-            # The "Zip" offset:
-            decoder_inputs.append(t_idx[:-1])  # History: [START], p, i, k...
-            decoder_targets.append(t_idx[1:])  # Future: p, i, k, a... [END]
+            # DIRECTION 1: English -> IPA
+            src_g2p = f"<{word}"
+            tgt_g2p = f"[{ipa}]"
+
+            # DIRECTION 2: IPA -> English
+            src_p2g = f">{ipa}"
+            tgt_p2g = f"[{word}]"
+
+            for src, tgt in [(src_g2p, tgt_g2p), (src_p2g, tgt_p2g)]:
+                e_idx = encode(src, max_len)
+                t_idx = encode(tgt, max_len)
+
+                encoder_inputs.append(e_idx)
+                decoder_inputs.append(t_idx[:-1])
+                decoder_targets.append(t_idx[1:])
 
     return (np.array(encoder_inputs), np.array(decoder_inputs)), np.array(decoder_targets)
 
@@ -168,15 +222,9 @@ model.save("poke_model_final.keras")
 with open("vocab.json", "w") as f:
     json.dump(vocab, f)
 
-
-# Reload the model using the TensorFlow backend to export for JS
-os.environ["KERAS_BACKEND"] = "tensorflow"
-import keras
-
 # Load the trained .keras file
 model = keras.models.load_model("best_poke_model.keras")
 
 # Export to TF.js format (requires 'pip install tensorflowjs')
 # This creates a folder 'tfjs_model' you can upload to your web server
-import tensorflowjs as tfjs
 tfjs.converters.save_keras_model(model, "tfjs_model")

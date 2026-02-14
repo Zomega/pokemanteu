@@ -94,7 +94,7 @@ def load_random_pokemon(file_path, n=10):
     for line in samples:
         word, ipa = line.split("\t")
 
-        ipa = ipa.strip()
+        ipa = ipa.strip() # TODO: Remove IPA Slashes.
 
         pairs.append((word, ipa))
 
