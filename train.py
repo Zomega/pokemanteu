@@ -20,6 +20,8 @@ vocab = {char: i + 1 for i, char in enumerate(chars)}
 vocab["[PAD]"] = 0
 inv_vocab = {i: char for char, i in vocab.items()}
 
+with open("vocab.json", "w") as f:
+    json.dump(vocab, f)
 
 def encode(text, max_len=40):
     ids = [vocab[c] for c in text if c in vocab]
