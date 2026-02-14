@@ -11,6 +11,7 @@ import numpy as np
 # 2. THE VOCABULARY & TOKENIZER
 # We define our own to ensure absolute consistency for JS export.
 # TODO: Just use lowercase.
+# TODO: Load from training data! We're missing a lot.
 alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' -/"
 ipa_symbols = "ɪæəɑɔʊuːiːeɪaɪɔɪoʊaʊpbt dkfɡvθðszʃʒhtʃdʒmlrjŋ"
 special = "<>[] "  # < (G2P), > (P2G), [ (Start), ] (Stop), space (Padding)
@@ -32,7 +33,7 @@ def encode(text, max_len=40):
 
 # 3. DATA SERIALIZATION (The "Zip" Logic)
 
-
+# TODO: Strip // off the IPA representations.
 def prepare_multitask_data(file_path, max_len=40):
     # Load your "word \t ipa" file
     with open(file_path, 'r', encoding='utf-8') as f:

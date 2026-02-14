@@ -6,6 +6,8 @@ os.environ["KERAS_BACKEND"] = "tensorflow"
 import keras
 import json
 import numpy as np
+import random
+from tabulate import tabulate
 
 # 1. SETUP & LOAD
 MAX_LEN = 40  # Must match the value used in training!
@@ -42,7 +44,7 @@ def encode_input(text, task_token):
     return ids + [PAD_TOKEN] * (MAX_LEN - len(ids))
 
 
-
+# TODO: Beam Search instead.
 def generate(text, task_token):
     """
     Autoregressive generation.
@@ -82,28 +84,37 @@ def generate_word(ipa):
     return generate(ipa, ">")
 
 
-# --- MAIN EXECUTION ---
-pokemon_names = [
-    "Pikachu",
-    "Bulbasaur",
-    "Charizard",
-    "Mewtwo",
-    "Gyarados",
-    "Rayquaza",
-    "Sudowoodo",
-    "Gardevoir"
-]
+def load_random_pokemon(file_path, n=10):
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f if line.strip()]
 
-print("-" * 60)
-print(f"{'POKEMON':<15} | {'IPA':<20} | {'BACK TO WORD'}")
-print("-" * 60)
+    samples = random.sample(lines, min(n, len(lines)))
 
-for name in pokemon_names:
+    pairs = []
+    for line in samples:
+        word, ipa = line.split("\t")
+
+        ipa = ipa.strip()
+
+        pairs.append((word, ipa))
+
+    return pairs
+
+samples = load_random_pokemon("pokemon.tsv", n=30)
+
+rows = []
+
+for word, true_ipa in samples:
     try:
-        ipa = generate_ipa(name)
-        back = generate_word(ipa)
+        print("Processing", word, "...")
+        model_ipa = generate_ipa(word)
+        model_word = generate_word(true_ipa)
+        round_robin = generate_word(model_ipa)
 
-        print(f"{name:<15} | /{ipa:<18}/ | {back}")
+        rows.append([word, f"{true_ipa}", f"{model_ipa}", model_word, round_robin])
     except Exception as e:
-        print(f"Error generating for {name}: {e}")
+        rows.append([word, f"Error: {e}", "", "", ""])
 
+# Print table nicely
+headers = ["POKEMON", "TRUE IPA", "WORD→IPA", "IPA→WORD", "ROUND-TRIP"]
+print(tabulate(rows, headers=headers, tablefmt="fancy_grid"))
