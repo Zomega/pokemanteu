@@ -1,11 +1,12 @@
+import os
+
+os.environ["KERAS_BACKEND"] = "tensorflow"
+
 from keras import layers
 import keras
-import os
 import json
 import numpy as np
 
-# 1. SETUP BACKEND
-os.environ["KERAS_BACKEND"] = "torch"
 
 # 2. THE VOCABULARY & TOKENIZER
 # We define our own to ensure absolute consistency for JS export.
@@ -19,14 +20,17 @@ vocab["[PAD]"] = 0
 inv_vocab = {i: char for char, i in vocab.items()}
 
 
-def encode(text, max_len=25):
+def encode(text, max_len=40):
     ids = [vocab[c] for c in text if c in vocab]
+    # 1. Truncate to ensure it never exceeds max_len
+    ids = ids[:max_len]
+    # 2. Pad (this is now safe)
     return ids + [0] * (max_len - len(ids))
 
 # 3. DATA SERIALIZATION (The "Zip" Logic)
 
 
-def prepare_multitask_data(file_path, max_len=25):
+def prepare_multitask_data(file_path, max_len=40):
     # Load your "word \t ipa" file
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
@@ -63,27 +67,60 @@ def prepare_multitask_data(file_path, max_len=25):
 # 4. THE TRANSFORMER ARCHITECTURE
 
 
-def build_transformer(vocab_size, max_len, embed_dim=128, num_heads=4):
-    # Encoder
+def transformer_block(x, embed_dim, num_heads, ff_dim, rate=0.1):
+    attn_output = layers.MultiHeadAttention(
+        num_heads=num_heads, key_dim=embed_dim)(x, x)
+    attn_output = layers.Dropout(rate)(attn_output)
+    out1 = layers.LayerNormalization(epsilon=1e-6)(x + attn_output)
+
+    ffn_output = layers.Dense(ff_dim, activation="relu")(out1)
+    ffn_output = layers.Dense(embed_dim)(ffn_output)
+    ffn_output = layers.Dropout(rate)(ffn_output)
+    return layers.LayerNormalization(epsilon=1e-6)(out1 + ffn_output)
+
+
+def build_transformer(vocab_size, max_len, embed_dim=128, num_heads=4, ff_dim=128, rate=0.1):
+    # --- ENCODER ---
     enc_in = keras.Input(shape=(max_len,), name="enc_in")
-    x = layers.Embedding(vocab_size, embed_dim)(enc_in)
-    # Simple Positional Encoding (built into Keras 3 layers in 2026)
-    x = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(x, x)
-    enc_out = layers.LayerNormalization()(x)
 
-    # Decoder
+    # Embeddings (Masking enabled)
+    token_emb = layers.Embedding(vocab_size, embed_dim, mask_zero=True)(enc_in)
+    positions = layers.Lambda(lambda x: keras.ops.arange(
+        0, max_len, dtype="int32"))(enc_in)
+    pos_emb = layers.Embedding(max_len, embed_dim)(positions)
+
+    x = token_emb + pos_emb
+    x = transformer_block(x, embed_dim, num_heads, ff_dim, rate)
+    enc_out = x
+
+    # --- DECODER ---
     dec_in = keras.Input(shape=(max_len-1,), name="dec_in")
-    y = layers.Embedding(vocab_size, embed_dim)(dec_in)
 
-    # Self-attention with CAUSAL MASKING (crucial for parallel training)
-    y = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(
+    token_emb_dec = layers.Embedding(
+        vocab_size, embed_dim, mask_zero=True)(dec_in)
+    positions_dec = layers.Lambda(lambda x: keras.ops.arange(
+        0, max_len-1, dtype="int32"))(dec_in)
+    pos_emb_dec = layers.Embedding(max_len, embed_dim)(positions_dec)
+
+    y = token_emb_dec + pos_emb_dec
+
+    # 1. Self-Attention (Causal)
+    attn_output = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(
         y, y, use_causal_mask=True)
-    y = layers.LayerNormalization()(y)
+    attn_output = layers.Dropout(rate)(attn_output)  # Added Dropout
+    y = layers.LayerNormalization(epsilon=1e-6)(y + attn_output)
 
-    # Cross-attention to encoder
-    y = layers.MultiHeadAttention(
-        num_heads=num_heads, key_dim=embed_dim)(y, enc_out)
-    y = layers.LayerNormalization()(y)
+    # 2. Cross-Attention
+    attn_output = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(
+        y, enc_out)
+    attn_output = layers.Dropout(rate)(attn_output)  # Added Dropout
+    y = layers.LayerNormalization(epsilon=1e-6)(y + attn_output)
+
+    # 3. Feed-Forward
+    ffn_output = layers.Dense(ff_dim, activation="relu")(y)
+    ffn_output = layers.Dense(embed_dim)(ffn_output)
+    ffn_output = layers.Dropout(rate)(ffn_output)  # Added Dropout
+    y = layers.LayerNormalization(epsilon=1e-6)(y + ffn_output)
 
     outputs = layers.Dense(vocab_size, activation="softmax")(y)
 
@@ -91,7 +128,7 @@ def build_transformer(vocab_size, max_len, embed_dim=128, num_heads=4):
 
 
 # 5. EXECUTION
-max_seq = 25
+max_seq = 40
 (x_enc, x_dec), y_tgt = prepare_multitask_data("en_US.tsv", max_len=max_seq)
 
 model = build_transformer(len(vocab), max_seq)
@@ -105,3 +142,16 @@ model.fit([x_enc, x_dec], y_tgt, batch_size=64,
 model.save("poke_model.keras")
 with open("vocab.json", "w") as f:
     json.dump(vocab, f)
+
+
+# Reload the model using the TensorFlow backend to export for JS
+os.environ["KERAS_BACKEND"] = "tensorflow" 
+import keras
+
+# Load the trained .keras file
+model = keras.models.load_model("poke_model.keras")
+
+# Export to TF.js format (requires 'pip install tensorflowjs')
+# This creates a folder 'tfjs_model' you can upload to your web server
+import tensorflowjs as tfjs
+tfjs.converters.save_keras_model(model, "tfjs_model")
