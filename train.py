@@ -231,7 +231,7 @@ callbacks = [
 
 model.fit([x_enc, x_dec], y_tgt,
           batch_size=64,
-          epochs=10,
+          epochs=30,
           validation_split=0.1,
           callbacks=callbacks)
 
