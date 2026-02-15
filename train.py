@@ -8,33 +8,16 @@ import json
 import numpy as np
 #import tensorflowjs as tfjs
 
-# --- CONFIGURATION ---
-FILES = ["en_US.tsv", "en_UK.tsv", "pokemon.tsv"]
-MAX_SEQ = 40
-
 # 1. DYNAMIC VOCABULARY BUILDER
 
 
 def build_vocab_from_files(file_paths):
-    """
-    Scans all files to find every unique character.
-    Returns: vocab (dict), inv_vocab (dict)
-    """
-    unique_chars = set()
+    # Start with standard special tokens
+    unique_chars = set(["<", ">", "[", "]"])
+    print("Building Global Vocabulary...")
 
-    # 1. Add our Special Control Tokens first (so they are never missed)
-    # < = Task: Word->IPA
-    # > = Task: IPA->Word
-    # [ = Start Generation
-    # ] = Stop Generation
-    special_tokens = ["<", ">", "[", "]"]
-    for t in special_tokens:
-        unique_chars.add(t)
-
-    print("Scanning files to build vocabulary...")
     for fpath in file_paths:
         if not os.path.exists(fpath):
-            print(f"Warning: {fpath} not found. Skipping.")
             continue
 
         with open(fpath, 'r', encoding='utf-8') as f:
@@ -43,40 +26,43 @@ def build_vocab_from_files(file_paths):
                 if len(parts) != 2:
                     continue
 
-                word_raw, ipa_raw = parts[0], parts[1]
+                word_raw = parts[0]
+                ipa_field = parts[1]
 
-                # APPLY CLEANING RULES HERE (must match prepare_multitask_data)
+                # Handle comma-separated variants
+                ipa_variants = ipa_field.split(',')
+
                 word = word_raw.lower().strip()
-                ipa = ipa_raw.replace("/", "").strip()  # Remove IPA slashes
+                unique_chars.update(list(word))
 
-                # Add chars to set
-                for c in word:
-                    unique_chars.add(c)
-                for c in ipa:
-                    unique_chars.add(c)
+                for ipa_var in ipa_variants:
+                    ipa_clean = ipa_var.replace("/", "").replace(" ", "").strip()
+                    unique_chars.update(list(ipa_clean))
 
-    # Sort to ensure deterministic order
+    # --- THE FIX IS HERE ---
+    # Ensure [PAD] is NOT in the set we are about to enumerate.
+    # We want to manually assign it to 0 later.
+    if "[PAD]" in unique_chars:
+        unique_chars.remove("[PAD]")
+
     sorted_chars = sorted(list(unique_chars))
 
-    # Create Dicts. 0 is reserved for [PAD]
+    # Assign indices 1, 2, 3... N
     vocab = {char: i + 1 for i, char in enumerate(sorted_chars)}
+
+    # Manually assign PAD to 0
     vocab["[PAD]"] = 0
+
+    # Now len(vocab) will match exactly (Max_Index + 1)
+    print(f"  Global Vocabulary Size: {len(vocab)}")
 
     inv_vocab = {i: char for char, i in vocab.items()}
 
-    print(f"Vocabulary built! Found {len(vocab)} unique characters.")
     return vocab, inv_vocab
 
 
-# Build it now
-vocab, inv_vocab = build_vocab_from_files(FILES)
 
-# Save it immediately
-with open("vocab.json", "w") as f:
-    json.dump(vocab, f)
-
-
-def encode(text, max_len=MAX_SEQ):
+def encode(text, vocab, max_len):
     ids = [vocab.get(c, vocab["[PAD]"]) for c in text]  # Use .get() to be safe
     ids = ids[:max_len]
     return ids + [0] * (max_len - len(ids))
@@ -84,7 +70,7 @@ def encode(text, max_len=MAX_SEQ):
 # 2. DATA LOADING (Consolidated)
 
 
-def prepare_multitask_data(file_paths, max_len=MAX_SEQ):
+def prepare_multitask_data(file_paths, vocab, max_len):
     encoder_inputs, decoder_inputs, decoder_targets = [], [], []
 
     print("Processing data...")
@@ -100,27 +86,40 @@ def prepare_multitask_data(file_paths, max_len=MAX_SEQ):
             if len(parts) != 2:
                 continue
 
-            # --- CLEANING RULES (Must match Vocab Builder) ---
             word = parts[0].lower().strip()
-            ipa = parts[1].replace("/", "").strip()
+            ipa_field = parts[1]
 
-            # DIRECTION 1: English -> IPA
-            src_g2p = f"<{word}"
-            tgt_g2p = f"[{ipa}]"
+            # 1. SPLIT by comma to handle multiple pronunciations
+            # "ˈɛrənsən, ˈɑːrənsən" -> ["ˈɛrənsən", " ˈɑːrənsən"]
+            ipa_variants = ipa_field.split(',')
 
-            # DIRECTION 2: IPA -> English
-            src_p2g = f">{ipa}"
-            tgt_p2g = f"[{word}]"
+            # 2. Iterate over each variant and create a training pair
+            for ipa_raw in ipa_variants:
+                ipa = ipa_raw.replace("/", "").replace(" ", "").strip()
 
-            for src, tgt in [(src_g2p, tgt_g2p), (src_p2g, tgt_p2g)]:
-                e_idx = encode(src, max_len)
-                t_idx = encode(tgt, max_len)
+                # Skip empty strings (in case of trailing commas)
+                if not ipa:
+                    continue
 
-                encoder_inputs.append(e_idx)
-                decoder_inputs.append(t_idx[:-1])
-                decoder_targets.append(t_idx[1:])
+                # DIRECTION 1: English -> IPA
+                src_g2p = f"<{word}"
+                tgt_g2p = f"[{ipa}]"
+
+                # DIRECTION 2: IPA -> English
+                # (Both IPA variants map back to the same English word)
+                src_p2g = f">{ipa}"
+                tgt_p2g = f"[{word}]"
+
+                for src, tgt in [(src_g2p, tgt_g2p), (src_p2g, tgt_p2g)]:
+                    e_idx = encode(src, vocab, max_len)
+                    t_idx = encode(tgt, vocab, max_len)
+
+                    encoder_inputs.append(e_idx)
+                    decoder_inputs.append(t_idx[:-1])
+                    decoder_targets.append(t_idx[1:])
 
     return (np.array(encoder_inputs), np.array(decoder_inputs)), np.array(decoder_targets)
+
 
 # 4. THE TRANSFORMER ARCHITECTURE
 
@@ -188,10 +187,29 @@ def build_transformer(vocab_size, max_len, embed_dim=128, num_heads=4, ff_dim=12
 
 
 # 5. EXECUTION
-max_seq = 40
-(x_enc, x_dec), y_tgt = prepare_multitask_data(FILES, max_len=MAX_SEQ)
 
-model = build_transformer(len(vocab), max_seq)
+FILES = [
+    "cmudict-0.7b-ipa.tsv",
+    "eng_latn_uk_broad.tsv",
+    "eng_latn_uk_broad_filtered.tsv",
+    "eng_latn_uk_narrow.tsv",
+    "eng_latn_us_broad.tsv",
+    "eng_latn_us_broad_filtered.tsv",
+    "eng_latn_us_narrow.tsv",
+    "en_UK.tsv",
+    "en_US.tsv",
+    "pokemon.tsv",
+]
+MAX_SEQ = 40
+
+# Build vocab
+vocab, inv_vocab = build_vocab_from_files(FILES)
+with open("vocab.json", "w") as f:
+    json.dump(vocab, f)
+
+(x_enc, x_dec), y_tgt = prepare_multitask_data(FILES, vocab, max_len=MAX_SEQ)
+
+model = build_transformer(len(vocab), MAX_SEQ)
 model.compile(optimizer="adam",
               loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
@@ -219,8 +237,6 @@ model.fit([x_enc, x_dec], y_tgt,
 
 # 6. SAVE FOR JS
 model.save("poke_model_final.keras")
-with open("vocab.json", "w") as f:
-    json.dump(vocab, f)
 
 # Load the trained .keras file
 model = keras.models.load_model("best_poke_model.keras")

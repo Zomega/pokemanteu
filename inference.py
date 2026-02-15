@@ -86,21 +86,30 @@ def generate_word(ipa):
 
 def load_random_pokemon(file_path, n=10):
     with open(file_path, "r", encoding="utf-8") as f:
+        # Filter out empty lines
         lines = [line.strip() for line in f if line.strip()]
 
+    # Sample first, then parse (more efficient)
     samples = random.sample(lines, min(n, len(lines)))
 
     pairs = []
     for line in samples:
-        word, ipa = line.split("\t")
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue  # Skip bad lines
 
-        ipa = ipa.strip() # TODO: Remove IPA Slashes.
+        word, ipa = parts[0], parts[1]
+
+        # --- THE FIX ---
+        # Remove slashes '/' and strip whitespace
+        ipa = ipa.replace("/", "").strip()
 
         pairs.append((word, ipa))
 
     return pairs
 
-samples = load_random_pokemon("pokemon.tsv", n=30)
+
+samples = load_random_pokemon("pokemon.tsv", n=100)
 
 rows = []
 
