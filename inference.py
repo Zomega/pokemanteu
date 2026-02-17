@@ -62,7 +62,8 @@ def generate(text, task_token):
 
         dec_in_tensor = np.array([padded_dec_in])
 
-        preds = model.predict([enc_in, dec_in_tensor], verbose=0)
+        #preds = model.predict([enc_in, dec_in_tensor], verbose=0)
+        preds = model([enc_in, dec_in_tensor], training=False)
 
         next_token_logits = preds[0, i, :]
         next_id = np.argmax(next_token_logits)
