@@ -6,7 +6,6 @@ import keras
 from keras import layers
 import json
 import numpy as np
-#import tensorflowjs as tfjs
 
 # 1. DYNAMIC VOCABULARY BUILDER
 
@@ -235,12 +234,4 @@ model.fit([x_enc, x_dec], y_tgt,
           validation_split=0.1,
           callbacks=callbacks)
 
-# 6. SAVE FOR JS
 model.save("poke_model_final.keras")
-
-# Load the trained .keras file
-model = keras.models.load_model("best_poke_model.keras")
-
-# Export to TF.js format (requires 'pip install tensorflowjs')
-# This creates a folder 'tfjs_model' you can upload to your web server
-tfjs.converters.save_keras_model(model, "tfjs_model")
