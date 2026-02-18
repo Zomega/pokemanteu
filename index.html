@@ -1,156 +1,294 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>PokePhonics Inference</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-</head>
-<body>
-    <h1>PokePhonics Browser Inference</h1>
-    <input type="text" id="inputWord" value="Pikachu" placeholder="Enter Pokémon Name">
-    <button onclick="runInference()">Generate IPA</button>
-    <p><strong>Output:</strong> <span id="output">...</span></p>
+    <head>
+        <title>PokePhonics Inference</title>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    </head>
+    <body>
+        <h1>PokePhonics Browser Inference</h1>
+        <input type="text" id="inputWord" value="Pikachu" placeholder="Enter Pokémon Name">
+            <button onclick="runInference()">Generate IPA</button>
+            <p>
+                <strong>Output:</strong>
+                <span id="output">...</span>
+            </p>
+            <script>
+      // --- CONFIGURATION ---
+      // In the browser, these are URLs relative to the HTML file
+      const MODEL_URL = './tfjs_model/model.json';
+      const VOCAB_URL = './vocab.json';
+      const MAX_LEN = 40;
+      const BEAM_WIDTH = 5;
 
-    <script>
-        // --- CONFIGURATION ---
-        // In the browser, these are URLs relative to the HTML file
-        const MODEL_URL = './tfjs_model/model.json';
-        const VOCAB_URL = './vocab.json';
-        const MAX_LEN = 40;
-        const BEAM_WIDTH = 5;
+      let model = null;
+      let vocab = null;
+      let invVocab = null;
 
-        let model = null;
-        let vocab = null;
-        let invVocab = null;
+      // --- SETUP ---
+      async function loadResources() {
+          if (model) return; // Already loaded
 
-        // --- SETUP ---
-        async function loadResources() {
-            if (model) return; // Already loaded
+          console.log("Loading model...");
+          // BROWSER DIFFERENCE 1: automatic fetching
+          // tf.loadGraphModel automatically uses 'fetch' in the browser.
+          // No fileLoader or custom handlers needed!
+          model = await tf.loadGraphModel(MODEL_URL);
 
-            console.log("Loading model...");
-            // BROWSER DIFFERENCE 1: automatic fetching
-            // tf.loadGraphModel automatically uses 'fetch' in the browser.
-            // No fileLoader or custom handlers needed!
-            model = await tf.loadGraphModel(MODEL_URL);
+          console.log("Loading vocab...");
+          const vocabResp = await fetch(VOCAB_URL);
+          vocab = await vocabResp.json();
+          invVocab = Object.fromEntries(Object.entries(vocab).map(([k, v]) => [v, k]));
 
-            console.log("Loading vocab...");
-            const vocabResp = await fetch(VOCAB_URL);
-            vocab = await vocabResp.json();
-            invVocab = Object.fromEntries(Object.entries(vocab).map(([k, v]) => [v, k]));
+          console.log("Ready!");
+      }
 
-            console.log("Ready!");
-        }
+      async function runInference() {
+          await loadResources();
+          const word = document.getElementById('inputWord').value.trim();
 
-        async function runInference() {
-            await loadResources();
+          // 1. Get the IPA via your existing Beam Search
+          const ipa = await decodeBeamBatched(word, "<");
+          const back_word = await decodeBeamBatched(ipa, ">");
 
-            const word = document.getElementById('inputWord').value;
-            const outputSpan = document.getElementById('output');
-            outputSpan.innerText = "Thinking...";
+          // 2. Calculate the "Force-Fed" loss of the word given that IPA
+        const cyclicData = await computeCyclicLoss(ipa, word);
 
-            // Run in a slight delay to let the UI update
-            setTimeout(async () => {
-                const ipa = await decodeBeamBatched(word, "<");
-                outputSpan.innerText = ipa;
-            }, 10);
-        }
+        // 3. Render Table
+        // We map it just to capitalize keys or add an index for a cleaner table
+        const tableData = cyclicData.details.map((row, index) => ({
+            Step: index + 1,
+            Char: row.char,
+            Prob: row.prob,
+            Loss: row.loss
+        }));
 
-        // --- BEAM SEARCH LOGIC (COPIED FROM YOUR NODE SCRIPT) ---
-        // The logic is IDENTICAL. I only removed the 'model', 'vocab', 'invVocab' args
-        // since they are global in this script.
-        async function decodeBeamBatched(word, taskToken) {
-            return tf.tidy(() => {
-                const fullText = taskToken + word.toLowerCase();
-                const START_TOKEN = vocab["["];
-                const STOP_TOKEN = vocab["]"];
-                const PAD_TOKEN = vocab["[PAD]"];
+        console.log(`%cCyclic Loss Analysis for "${word}"`, "font-weight: bold; font-size: 14px;");
+        console.table(tableData);
 
-                let encIds = fullText.split('').map(c => vocab[c] || 0).slice(0, MAX_LEN);
-                while (encIds.length < MAX_LEN) encIds.push(PAD_TOKEN);
+          document.getElementById('output').innerHTML = `
 
-                const encTensor = tf.tensor2d(Array(BEAM_WIDTH).fill(encIds), [BEAM_WIDTH, MAX_LEN], 'float32');
-                let scores = tf.tensor1d([0.0, ...Array(BEAM_WIDTH - 1).fill(-1e9)]);
-                let sequences = tf.fill([BEAM_WIDTH, 1], START_TOKEN, 'int32');
+                <strong>IPA:</strong> ${ipa}
+                <br>
+                    <strong>Reversed Word:</strong> ${back_word}
+                    <br>
+                        <strong>Avg Cyclic Loss:</strong> ${cyclicData.avgLoss}
+                        <br>
+                            <small>(Lower is better. High loss on specific chars indicates phonetic ambiguity.)</small>
+          `;
+      }
+      // --- BEAM SEARCH LOGIC (COPIED FROM YOUR NODE SCRIPT) ---
+      // The logic is IDENTICAL. I only removed the 'model', 'vocab', 'invVocab' args
+      // since they are global in this script.
+     async function decodeBeamBatched(word, taskToken) {
+    return tf.tidy(() => {
+        const fullText = taskToken + word.toLowerCase();
+        const START_TOKEN = vocab["["];
+        const STOP_TOKEN = vocab["]"];
+        const PAD_TOKEN = vocab["[PAD]"];
 
-                let finishedSeqs = [];
-                let finishedScores = [];
+        let encIds = fullText.split('').map(c => vocab[c] || 0).slice(0, MAX_LEN);
+        while (encIds.length < MAX_LEN) encIds.push(PAD_TOKEN);
 
-                for (let i = 0; i < MAX_LEN - 1; i++) {
-                    const currLen = sequences.shape[1];
-                    const padSize = (MAX_LEN - 1) - currLen;
+        const encTensor = tf.tensor2d(Array(BEAM_WIDTH).fill(encIds), [BEAM_WIDTH, MAX_LEN], 'float32');
+        let scores = tf.tensor1d([0.0, ...Array(BEAM_WIDTH - 1).fill(-1e9)]);
+        let sequences = tf.fill([BEAM_WIDTH, 1], START_TOKEN, 'int32');
 
-                    let decInput = sequences.cast('float32');
-                    if (padSize > 0) {
-                        decInput = decInput.pad([[0, 0], [0, padSize]], PAD_TOKEN);
-                    }
+        let finishedSeqs = [];
+        let finishedScores = [];
 
-                    // Named inputs work perfectly in browser WebGL backend too
-                    const inputs = { 'enc_in': encTensor, 'dec_in': decInput };
+        // --- THE LOOP ---
+        for (let i = 0; i < MAX_LEN - 1; i++) {
+            const currLen = sequences.shape[1];
+            const padSize = (MAX_LEN - 1) - currLen;
 
-                    let preds = model.execute(inputs);
-                    if (Array.isArray(preds)) preds = preds[0];
+            let decInput = sequences.cast('float32');
+            if (padSize > 0) {
+                decInput = decInput.pad([[0, 0], [0, padSize]], PAD_TOKEN);
+            }
 
-                    const nextTokenLogits = preds.gather([currLen - 1], 1).reshape([BEAM_WIDTH, -1]);
-                    const logProbs = tf.logSoftmax(nextTokenLogits);
+            const inputs = { 'enc_in': encTensor, 'dec_in': decInput };
+            let preds = model.execute(inputs);
+            if (Array.isArray(preds)) preds = preds[0];
 
-                    const candidateScores = scores.expandDims(1).add(logProbs);
-                    const flatScores = candidateScores.reshape([-1]);
-                    const {values: topKScores, indices: topKIndices} = tf.topk(flatScores, BEAM_WIDTH);
+            const nextTokenLogits = preds.gather([currLen - 1], 1).reshape([BEAM_WIDTH, -1]);
 
-                    const vocabSize = logProbs.shape[1];
-                    const beamIndices = topKIndices.div(tf.scalar(vocabSize, 'int32')).cast('int32');
-                    const tokenIndices = topKIndices.mod(tf.scalar(vocabSize, 'int32')).cast('int32');
+            // FIX: Use .add(1e-9) before log to avoid -Infinity
+            const logProbs = tf.log(nextTokenLogits.add(1e-9));
 
-                    // SYNC: In browser, arraySync() causes a UI thread block.
-                    // For production, you might want to use await .array() and make the function async
-                    // to keep the UI responsive, but sync is fine for testing.
-                    const bIdxArr = beamIndices.arraySync();
-                    const tIdxArr = tokenIndices.arraySync();
-                    const sArr = topKScores.arraySync();
-                    const seqsArr = sequences.arraySync();
+            const candidateScores = scores.expandDims(1).add(logProbs);
+            const flatScores = candidateScores.reshape([-1]);
+            const {values: topKScores, indices: topKIndices} = tf.topk(flatScores, BEAM_WIDTH);
 
-                    const nextSeqs = [];
-                    const nextScoresArr = [];
+            const vocabSize = logProbs.shape[1];
+            const beamIndices = topKIndices.div(tf.scalar(vocabSize, 'int32')).cast('int32');
+            const tokenIndices = topKIndices.mod(tf.scalar(vocabSize, 'int32')).cast('int32');
 
-                    for (let k = 0; k < BEAM_WIDTH; k++) {
-                        const bIdx = bIdxArr[k];
-                        const token = tIdxArr[k];
-                        const score = sArr[k];
+            // SYNC for logic (Keep strict logic separate from Tensors)
+            const bIdxArr = beamIndices.arraySync();
+            const tIdxArr = tokenIndices.arraySync();
+            const sArr = topKScores.arraySync();
+            const seqsArr = sequences.arraySync();
 
-                        if (token === STOP_TOKEN) {
-                            finishedSeqs.push(seqsArr[bIdx]);
-                            finishedScores.push(score);
-                            nextSeqs.push([...seqsArr[bIdx], PAD_TOKEN]);
-                            nextScoresArr.push(-1e9);
-                        } else {
-                            nextSeqs.push([...seqsArr[bIdx], token]);
-                            nextScoresArr.push(score);
-                        }
-                    }
+            const nextSeqs = [];
+            const nextScoresArr = [];
 
-                    sequences = tf.tensor2d(nextSeqs, [BEAM_WIDTH, nextSeqs[0].length], 'int32');
-                    scores = tf.tensor1d(nextScoresArr);
+            for (let k = 0; k < BEAM_WIDTH; k++) {
+                const bIdx = bIdxArr[k];
+                const token = tIdxArr[k];
+                const score = sArr[k];
 
-                    if (Math.max(...nextScoresArr) < -1e8) break;
-                }
+                if (token === STOP_TOKEN) {
+                    // Save finished sequence
+                    finishedSeqs.push(seqsArr[bIdx]);
+                    finishedScores.push(score);
 
-                let finalSeq;
-                if (finishedSeqs.length > 0) {
-                    const bestIdx = finishedScores.indexOf(Math.max(...finishedScores));
-                    finalSeq = finishedSeqs[bestIdx];
+                    // Kill this beam path in the active loop
+                    nextSeqs.push([...seqsArr[bIdx], PAD_TOKEN]);
+                    nextScoresArr.push(-1e9);
                 } else {
-                    const bestIdx = scores.argMax().dataSync()[0];
-                    finalSeq = sequences.arraySync()[bestIdx];
+                    nextSeqs.push([...seqsArr[bIdx], token]);
+                    nextScoresArr.push(score);
                 }
+            }
 
-                return finalSeq
-                    .filter(id => id !== START_TOKEN && id !== STOP_TOKEN && id !== PAD_TOKEN)
-                    .map(id => invVocab[id])
-                    .join('');
+            sequences = tf.tensor2d(nextSeqs, [BEAM_WIDTH, nextSeqs[0].length], 'int32');
+            scores = tf.tensor1d(nextScoresArr);
+
+            // Optimization: Stop if all current beams are effectively dead
+            if (Math.max(...nextScoresArr) < -1e8) break;
+        }
+
+        // --- DEBUG TABLE GENERATION ---
+
+        // 1. Gather "Active" beams (ones that hit MAX_LEN without stopping)
+        const finalActiveSeqs = sequences.arraySync();
+        const finalActiveScores = scores.arraySync();
+
+        // 2. Combine Active + Finished into one list
+        let allCandidates = [];
+
+        // Add Finished
+        for(let i=0; i
+                            <finishedSeqs.length; i++) {
+            allCandidates.push({
+                seq: finishedSeqs[i],
+                score: finishedScores[i],
+                status: 'DONE'
             });
         }
 
-        // Auto-load on page open
-        loadResources();
-    </script>
-</body>
-</html>
+        // Add Active (only if they aren't dead paths)
+        for(let i=0; i
+                                <finalActiveSeqs.length; i++) {
+            if (finalActiveScores[i] > -1e8) {
+                allCandidates.push({
+                    seq: finalActiveSeqs[i],
+                    score: finalActiveScores[i],
+                    status: 'MAX_LEN'
+                });
+            }
+        }
+
+        // 3. Decode text and format for table
+        const tableData = allCandidates.map((c, i) => {
+            const text = c.seq
+                .filter(id => id !== START_TOKEN && id !== STOP_TOKEN && id !== PAD_TOKEN)
+                .map(id => invVocab[id])
+                .join('');
+
+            return {
+                Rank: 0, // Will fill after sort
+                Text: text,
+                Score: c.score.toFixed(4),
+                Status: c.status
+            };
+        });
+
+        // 4. Sort by Score Descending
+        tableData.sort((a, b) => parseFloat(b.Score) - parseFloat(a.Score));
+
+        // 5. Assign Ranks and Log
+        tableData.forEach((row, idx) => row.Rank = idx + 1);
+        console.table(tableData);
+
+        // --- RETURN BEST ---
+        // Since we sorted tableData, the first element is the winner
+        if (tableData.length > 0) {
+            return tableData[0].Text;
+        } else {
+            return ""; // Should not happen
+        }
+    });
+}
+
+      async function computeCyclicLoss(generatedIpa, originalWord) {
+      return tf.tidy(() => {
+      const taskToken = ">";
+      const PAD_TOKEN = vocab["[PAD]"];
+
+      // 1. Prepare Encoder Input (Generated IPA)
+      const encText = taskToken + generatedIpa.toLowerCase();
+      let encIds = encText.split('').map(c => vocab[c] || 0).slice(0, MAX_LEN);
+      while (encIds.length < MAX_LEN) encIds.push(PAD_TOKEN);
+      const encTensor = tf.tensor2d([encIds], [1, MAX_LEN]);
+
+      // 2. Prepare Decoder Input (Ground Truth Word)
+      // We feed the full sequence [START, c1, c2, ... cN] (excluding the last PAD/STOP for input)
+      const fullTargetText = "[" + originalWord.toLowerCase() + "]";
+      let allTargetIds = fullTargetText.split('').map(c => vocab[c] || 0);
+
+      // Ensure we fit within MAX_LEN.
+      // The decoder input must be (MAX_LEN - 1) long.
+      // We take the first (MAX_LEN - 1) tokens.
+      let decInputIds = allTargetIds.slice(0, MAX_LEN - 1);
+      while (decInputIds.length < MAX_LEN - 1) decInputIds.push(PAD_TOKEN);
+
+      const decInput = tf.tensor2d([decInputIds], [1, MAX_LEN - 1], 'float32');
+
+      // 3. Run Model ONCE (Single Pass)
+      let preds = model.execute({ 'enc_in': encTensor, 'dec_in': decInput });
+      if (Array.isArray(preds)) preds = preds[0];
+      // preds shape: [1, MAX_LEN-1, VOCAB_SIZE] (Already Probabilities!)
+
+      let totalLoss = 0;
+      let charResults = [];
+
+      // 4. Compare predictions to the *next* character
+      // If input was index 0 ('['), we look at output 0 to see if it predicts target index 1 ('b')
+      const limit = Math.min(allTargetIds.length - 1, MAX_LEN - 1);
+
+      for (let i = 0; i < limit; i++) {
+          const nextCharId = allTargetIds[i + 1];
+
+          // Get the probability vector for step i
+          const stepProbs = preds.gather([i], 1).reshape([-1]);
+
+          // Extract the specific probability for the correct next character
+          // FIX: Do NOT use tf.softmax here. stepProbs are already probs.
+          const charProb = stepProbs.gather([nextCharId]).dataSync()[0];
+
+          // Avoid log(0)
+          const safeProb = Math.max(charProb, 1e-9);
+          const stepLoss = -Math.log(safeProb);
+
+          totalLoss += stepLoss;
+          charResults.push({
+              char: invVocab[nextCharId],
+              prob: (charProb * 100).toFixed(2) + "%",
+              loss: stepLoss.toFixed(4)
+          });
+      }
+
+      return {
+          avgLoss: (totalLoss / limit).toFixed(4),
+          details: charResults
+      };
+      });
+      }
+
+      // Auto-load on page open
+      loadResources();
+
+                                </script>
+                            </body>
+                        </html>
