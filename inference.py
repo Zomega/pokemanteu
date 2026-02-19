@@ -162,10 +162,10 @@ def decode_sequence_beam_batched(input_text, task_token, beam_width=3):
 
 # Updated wrapper
 def generate_ipa(word):
-    return decode_sequence_beam_batched(word, "<", beam_width=5)
+    return decode_sequence_beam_batched(word, "<", beam_width=10)
 
 def generate_word(ipa):
-    return decode_sequence_beam_batched(ipa, ">", beam_width=5)
+    return decode_sequence_beam_batched(ipa, ">", beam_width=10)
 
 
 def load_random_pokemon(file_path, n=10):

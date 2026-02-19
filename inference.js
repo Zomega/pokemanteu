@@ -3,7 +3,6 @@
 const MODEL_URL = "./tfjs_model/model.json";
 const VOCAB_URL = "./vocab.json";
 const MAX_LEN = 40;
-const BEAM_WIDTH = 5;
 
 let model = null;
 let vocab = null;
@@ -11,12 +10,9 @@ let invVocab = null;
 
 // --- SETUP ---
 async function loadResources() {
-  if (model) return; // Already loaded
+  if (model) return;
 
   console.log("Loading model...");
-  // BROWSER DIFFERENCE 1: automatic fetching
-  // tf.loadGraphModel automatically uses 'fetch' in the browser.
-  // No fileLoader or custom handlers needed!
   model = await tf.loadGraphModel(MODEL_URL);
 
   console.log("Loading vocab...");
@@ -31,15 +27,12 @@ async function runInference() {
   await loadResources();
   const word = document.getElementById("inputWord").value.trim();
 
-  // 1. Get the IPA via your existing Beam Search
-  const ipa = await decodeBeamBatched(word, "<");
-  const back_word = await decodeBeamBatched(ipa, ">");
+  // 1. Get the IPA via Beam Search
+  const ipa = await decodeBeamBatched(word, "<", (beam_width = 10));
+  const back_word = await decodeBeamBatched(ipa, ">", (beam_width = 10));
 
-  // 2. Calculate the "Force-Fed" loss of the word given that IPA
+  // 2. Calculate the reverse forced loss
   const cyclicData = await computeCyclicLoss(ipa, word, ">");
-
-  // 3. Render Table
-  // We map it just to capitalize keys or add an index for a cleaner table
   const tableData = cyclicData.details.map((row, index) => ({
     Step: index + 1,
     Char: row.char,
@@ -54,21 +47,30 @@ async function runInference() {
   console.table(tableData);
 
   document.getElementById("output").innerHTML = `
-
-                <strong>IPA:</strong> ${ipa}
-                <br>
-                    <strong>Reversed Word:</strong> ${back_word}
-                    <br>
-                        <strong>Avg Cyclic Loss:</strong> ${cyclicData.avgLoss}
-                        <br>
-                            <small>(Lower is better. High loss on specific chars indicates phonetic ambiguity.)</small>
-          `;
+<strong>IPA:</strong> ${ipa}
+<br>
+<strong>Reversed Word:</strong> ${back_word}
+<br>
+<strong>Avg Cyclic Loss:</strong> ${cyclicData.avgLoss}
+<br>
+(Lower is better. High loss on specific chars indicates phonetic ambiguity.)
+`;
 }
 
-async function decodeBeamBatched(word, taskToken, alpha = 0.6) {
+async function decodeBeamBatched(
+  word,
+  taskToken,
+  beam_width = 3,
+  alpha = 0.6,
+  lambda_bidir_rerank = 10,
+) {
   // PHASE 1: Generate Candidates (Forward Pass)
   const candidates = tf.tidy(() => {
-    const fullText = taskToken + word.toLowerCase();
+    let cleanInput = word;
+    if (taskToken === "<") {
+      cleanInput = word.toLowerCase();
+    }
+    const fullText = taskToken + cleanInput;
     const START_TOKEN = vocab["["];
     const STOP_TOKEN = vocab["]"];
     const PAD_TOKEN = vocab["[PAD]"];
@@ -85,12 +87,12 @@ async function decodeBeamBatched(word, taskToken, alpha = 0.6) {
     while (encIds.length < MAX_LEN) encIds.push(PAD_TOKEN);
 
     const encTensor = tf.tensor2d(
-      Array(BEAM_WIDTH).fill(encIds),
-      [BEAM_WIDTH, MAX_LEN],
+      Array(beam_width).fill(encIds),
+      [beam_width, MAX_LEN],
       "float32",
     );
-    let scores = tf.tensor1d([0.0, ...Array(BEAM_WIDTH - 1).fill(-1e9)]);
-    let sequences = tf.fill([BEAM_WIDTH, 1], START_TOKEN, "int32");
+    let scores = tf.tensor1d([0.0, ...Array(beam_width - 1).fill(-1e9)]);
+    let sequences = tf.fill([beam_width, 1], START_TOKEN, "int32");
 
     let finishedSeqs = [];
     let finishedScores = [];
@@ -114,14 +116,14 @@ async function decodeBeamBatched(word, taskToken, alpha = 0.6) {
 
       const nextTokenLogits = preds
         .gather([currLen - 1], 1)
-        .reshape([BEAM_WIDTH, -1]);
+        .reshape([beam_width, -1]);
       const logProbs = tf.log(nextTokenLogits.add(1e-9));
 
       const candidateScores = scores.expandDims(1).add(logProbs);
       const flatScores = candidateScores.reshape([-1]);
       const { values: topKScores, indices: topKIndices } = tf.topk(
         flatScores,
-        BEAM_WIDTH,
+        beam_width,
       );
 
       const vocabSize = logProbs.shape[1];
@@ -140,7 +142,7 @@ async function decodeBeamBatched(word, taskToken, alpha = 0.6) {
       const nextSeqs = [];
       const nextScoresArr = [];
 
-      for (let k = 0; k < BEAM_WIDTH; k++) {
+      for (let k = 0; k < beam_width; k++) {
         const bIdx = bIdxArr[k];
         const token = tIdxArr[k];
         const score = sArr[k];
@@ -158,18 +160,18 @@ async function decodeBeamBatched(word, taskToken, alpha = 0.6) {
 
       sequences = tf.tensor2d(
         nextSeqs,
-        [BEAM_WIDTH, nextSeqs[0].length],
+        [beam_width, nextSeqs[0].length],
         "int32",
       );
       scores = tf.tensor1d(nextScoresArr);
 
-      if (finishedSeqs.length >= BEAM_WIDTH) {
+      if (finishedSeqs.length >= beam_width) {
         const finishedWithAlpha = finishedScores.map((s, idx) => {
           const len = finishedSeqs[idx].length - 1;
           return getAlphaScore(s, len);
         });
         finishedWithAlpha.sort((a, b) => b - a);
-        const worstWinningScore = finishedWithAlpha[BEAM_WIDTH - 1];
+        const worstWinningScore = finishedWithAlpha[beam_width - 1];
         const bestActiveLogProb = Math.max(...nextScoresArr);
 
         if (bestActiveLogProb > -1e8) {
@@ -219,101 +221,160 @@ async function decodeBeamBatched(word, taskToken, alpha = 0.6) {
       .sort((a, b) => b["Alpha Score"] - a["Alpha Score"]);
   });
 
-  // PHASE 2: Check Cyclic Loss (Backward Pass)
-
-  // 1. Determine the opposite direction
-  // If input was < (G2P), backward is > (P2G)
-  // If input was > (P2G), backward is < (G2P)
+  // --- PHASE 2: Compute Cyclic Loss (Backward Pass / Round-trip Consistency) ---
   const backwardTaskToken = taskToken === "<" ? ">" : "<";
 
-  // 2. Compute Loss
-  const detailedCandidates = await Promise.all(
-    candidates.map(async (c) => {
-      // We feed the Generated Text (c.Text) + backward token to see if it generates the Original (word)
-      const lossData = await computeCyclicLoss(c.Text, word, backwardTaskToken);
+  // 1. Extract strings from candidates for batch processing
+  const textInputs = candidates.map((c) => c.Text);
 
-      return {
-        ...c,
-        "Cyclic Loss": lossData.avgLoss,
-      };
-    }),
+  // 2. Run ONE batch inference for all candidates at once
+  const lossResults = await computeCyclicLossBatch(
+    textInputs,
+    word,
+    backwardTaskToken,
   );
 
-  // 3. Log
-  const tableData = detailedCandidates.map((row, idx) => ({
-    Rank: idx + 1,
+  // --- PHASE 3: Shallow Fusion & Reranking ---
+  const fusedCandidates = candidates.map((c, i) => {
+    const fwdScore = parseFloat(c["Alpha Score"]);
+    const cycLoss = parseFloat(lossResults[i].avgLoss);
+
+    // Since cycLoss is a positive NLL, subtracting it penalizes inconsistency.
+    const fusedScore = fwdScore - lambda_bidir_rerank * cycLoss;
+
+    return {
+      ...c,
+      "Cyclic Loss": cycLoss.toFixed(4),
+      "Fused Score": fusedScore,
+    };
+  });
+
+  // 4. Re-sort candidates based on the new Fused Score (Descending)
+  fusedCandidates.sort((a, b) => b["Fused Score"] - a["Fused Score"]);
+
+  // 5. Log the detailed reranking table
+  const tableData = fusedCandidates.map((row, idx) => ({
+    "Final Rank": idx + 1,
     Text: row.Text,
-    "Alpha Score": row["Alpha Score"].toFixed(4),
-    "Cyclic Loss": row["Cyclic Loss"],
+    "Fused Score": row["Fused Score"].toFixed(4),
+    "Fwd Alpha": row["Alpha Score"].toFixed(4),
+    "Cyc Loss": row["Cyclic Loss"],
     Status: row.Status,
   }));
 
   console.log(
-    `%cBeam Search Analysis (${taskToken} -> ${backwardTaskToken})`,
-    "font-weight: bold; color: #4CAF50",
+    `%cBi-Directional Reranking(${backwardTaskToken}) | lambda_bidir_rerank=${lambda_bidir_rerank}`,
+    "font-weight: bold; color: #FF9800; font-size: 12px;",
   );
   console.table(tableData);
 
-  return detailedCandidates.length > 0 ? detailedCandidates[0].Text : "";
+  // --- RETURN BEST ---
+  // We now return the top-ranked item after fusion.
+  return fusedCandidates.length > 0 ? fusedCandidates[0].Text : "";
 }
 
-// ADD backwardTaskToken as the 3rd argument
-async function computeCyclicLoss(
-  generatedOutput,
+async function computeCyclicLossBatch(
+  generatedCandidates,
   originalInput,
   backwardTaskToken,
 ) {
+    // TODO: Can we use the length of the originalInput here rather than MAX_LEN?
   return tf.tidy(() => {
+    const BATCH_SIZE = generatedCandidates.length;
     const PAD_TOKEN = vocab["[PAD]"];
 
-    // 1. Prepare Encoder Input (The output from the forward pass)
-    // We use the backwardTaskToken here (e.g., if checking a word, we use '<' to see if it generates IPA)
-    const encText = backwardTaskToken + generatedOutput.toLowerCase();
-    let encIds = encText
-      .split("")
-      .map((c) => vocab[c] || 0)
-      .slice(0, MAX_LEN);
-    while (encIds.length < MAX_LEN) encIds.push(PAD_TOKEN);
-    const encTensor = tf.tensor2d([encIds], [1, MAX_LEN]);
+    // --- 1. Prepare Encoder Inputs ---
+    const encIdsBatch = generatedCandidates.map((txt) => {
+      let cleanTxt = txt;
+      if (backwardTaskToken === "<") {
+        cleanTxt = txt.toLowerCase();
+      }
+      const encText = backwardTaskToken + cleanTxt;
+      let ids = encText
+        .split("")
+        .map((c) => vocab[c] || 0)
+        .slice(0, MAX_LEN);
+      while (ids.length < MAX_LEN) ids.push(PAD_TOKEN);
+      return ids;
+    });
+    const encTensor = tf.tensor2d(
+      encIdsBatch,
+      [BATCH_SIZE, MAX_LEN],
+      "float32",
+    );
 
-    // 2. Prepare Decoder Input (The original ground truth input)
-    const fullTargetText = "[" + originalInput.toLowerCase() + "]";
+    // --- 2. Prepare Decoder Inputs ---
+    let targetTxt = originalInput;
+    if (backwardTaskToken === ">") {
+      targetTxt = originalInput.toLowerCase();
+    }
+
+    const fullTargetText = "[" + targetTxt + "]";
     let allTargetIds = fullTargetText.split("").map((c) => vocab[c] || 0);
 
     let decInputIds = allTargetIds.slice(0, MAX_LEN - 1);
     while (decInputIds.length < MAX_LEN - 1) decInputIds.push(PAD_TOKEN);
 
-    const decInput = tf.tensor2d([decInputIds], [1, MAX_LEN - 1], "float32");
+    const decInputSingle = tf.tensor2d(
+      [decInputIds],
+      [1, MAX_LEN - 1],
+      "float32",
+    );
+    const decInputBatch = decInputSingle.tile([BATCH_SIZE, 1]);
 
-    // 3. Run Model
-    let preds = model.execute({ enc_in: encTensor, dec_in: decInput });
+    // --- 3. Run Model ---
+    let preds = model.execute({ enc_in: encTensor, dec_in: decInputBatch });
     if (Array.isArray(preds)) preds = preds[0];
 
-    let totalLoss = 0;
-    let charResults = [];
+    // --- 4. Compute Loss ---
+    const results = [];
     const limit = Math.min(allTargetIds.length - 1, MAX_LEN - 1);
 
-    for (let i = 0; i < limit; i++) {
-      const nextCharId = allTargetIds[i + 1];
-      const stepProbs = preds.gather([i], 1).reshape([-1]);
-      const charProb = stepProbs.gather([nextCharId]).dataSync()[0];
+    for (let b = 0; b < BATCH_SIZE; b++) {
+      // Get prediction matrix for this batch item: [SEQ_LEN, VOCAB_SIZE]
+      const batchPreds = preds.gather([b], 0).squeeze([0]);
 
-      const safeProb = Math.max(charProb, 1e-9);
-      const stepLoss = -Math.log(safeProb);
+      let totalLoss = 0;
+      const charDetails = [];
 
-      totalLoss += stepLoss;
-      charResults.push({
-        char: invVocab[nextCharId],
-        prob: (charProb * 100).toFixed(2) + "%",
-        loss: stepLoss.toFixed(4),
+      for (let i = 0; i < limit; i++) {
+        const nextCharId = allTargetIds[i + 1];
+
+        const charProb = batchPreds
+          .slice([i, nextCharId], [1, 1])
+          .dataSync()[0];
+
+        const safeProb = Math.max(charProb, 1e-9);
+        const stepLoss = -Math.log(safeProb);
+
+        totalLoss += stepLoss;
+
+        charDetails.push({
+          char: invVocab[nextCharId],
+          prob: (charProb * 100).toFixed(2) + "%",
+          loss: stepLoss.toFixed(4),
+        });
+      }
+      results.push({
+        avgLoss: (totalLoss / limit).toFixed(4),
+        details: charDetails,
       });
     }
-
-    return {
-      avgLoss: (totalLoss / limit).toFixed(4),
-      details: charResults,
-    };
+    return results;
   });
+}
+
+async function computeCyclicLoss(
+  generatedIpa,
+  originalWord,
+  backwardTaskToken,
+) {
+  const results = await computeCyclicLossBatch(
+    [generatedIpa],
+    originalWord,
+    backwardTaskToken,
+  );
+  return results[0];
 }
 
 // Auto-load on page open
