@@ -1,3 +1,5 @@
+import * as tf from 'https://esm.run/@tensorflow/tfjs';
+
 // --- CONFIGURATION ---
 // In the browser, these are URLs relative to the HTML file
 const MODEL_URL = "./tfjs_model/model.json";
@@ -9,7 +11,7 @@ let vocab = null;
 let invVocab = null;
 
 // --- SETUP ---
-async function loadResources() {
+export async function loadResources() {
   if (model) return;
 
   console.log("Loading model...");
@@ -23,13 +25,13 @@ async function loadResources() {
   console.log("Ready!");
 }
 
-async function runInference() {
+export async function runInference() {
   await loadResources();
   const word = document.getElementById("inputWord").value.trim();
 
   // 1. Get the IPA via Beam Search
-  const ipa = await decodeBeamBatched(word, "<", (beam_width = 10));
-  const back_word = await decodeBeamBatched(ipa, ">", (beam_width = 10));
+  const ipa = await decodeBeamBatched(word, "<", 10);
+  const back_word = await decodeBeamBatched(ipa, ">", 10);
 
   // 2. Calculate the reverse forced loss
   const cyclicData = await computeCyclicLoss(ipa, word, ">");
@@ -57,12 +59,12 @@ async function runInference() {
 `;
 }
 
-async function decodeBeamBatched(
+export async function decodeBeamBatched(
   word,
   taskToken,
   beam_width = 3,
   alpha = 0.6,
-  lambda_bidir_rerank = 10,
+  lambda_bidir_rerank = 6,
 ) {
   // PHASE 1: Generate Candidates (Forward Pass)
   const candidates = tf.tidy(() => {
@@ -273,7 +275,7 @@ async function decodeBeamBatched(
   return fusedCandidates.length > 0 ? fusedCandidates[0].Text : "";
 }
 
-async function computeCyclicLossBatch(
+export async function computeCyclicLossBatch(
   generatedCandidates,
   originalInput,
   backwardTaskToken,
@@ -364,7 +366,7 @@ async function computeCyclicLossBatch(
   });
 }
 
-async function computeCyclicLoss(
+export async function computeCyclicLoss(
   generatedIpa,
   originalWord,
   backwardTaskToken,
@@ -376,6 +378,3 @@ async function computeCyclicLoss(
   );
   return results[0];
 }
-
-// Auto-load on page open
-loadResources();

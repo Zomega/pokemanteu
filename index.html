@@ -2,17 +2,16 @@
 <html>
   <head>
     <title>PokePhonics Inference</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
   </head>
   <body>
     <h1>PokePhonics Browser Inference</h1>
+
     <input type="text" id="inputWord" value="Pikachu" placeholder="Enter Pokémon Name">
-    <button onclick="runInference()">Generate IPA</button>
+    <button id="inference-btn">Generate IPA</button>
     <p>
       <strong>Output:</strong>
       <span id="output">...</span>
     </p>
-    <script src="inference.js"></script>
 
     <div class="controls">
         <h2>Markov Generator</h2>
@@ -20,6 +19,7 @@
     </div>
 
     <div id="markov-output"></div>
-        <script src="markov.js"></script>
+
+    <script type="module" src="main.js"></script>
   </body>
 </html>
