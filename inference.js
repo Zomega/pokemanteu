@@ -1,86 +1,13 @@
 import * as tf from 'https://esm.run/@tensorflow/tfjs';
 import {SequenceScorer} from './shallow_fusion.js';
 
-// --- CONFIGURATION ---
-// In the browser, these are URLs relative to the HTML file
-const MODEL_URL = "./tfjs_model/model.json";
-const VOCAB_URL = "./vocab.json";
+// TODO: Include this in the model context?
 const MAX_LEN = 40;
 
-let model = null;
-let vocab = null;
-let invVocab = null;
-
-// --- SETUP ---
-export async function loadResources() {
-  if (model) return;
-
-  console.log("Loading model...");
-  model = await tf.loadGraphModel(MODEL_URL);
-
-  console.log("Loading vocab...");
-  const vocabResp = await fetch(VOCAB_URL);
-  vocab = await vocabResp.json();
-  invVocab = Object.fromEntries(Object.entries(vocab).map(([k, v]) => [v, k]));
-
-  console.log("Ready!");
-}
-
-// TODO: This whole thing, including loadResources, should be moved to main.
-export async function runInference() {
-  await loadResources();
-  const word = document.getElementById("inputWord").value.trim();
-
-  // 1. Define your pipelines
-  const logitsProcessors = [];
-  // TODO: Hook up markov stuff properly.
-  const markovGenerator  = null;
-  if (markovGenerator) {
-    logitsProcessors.push({
-      processor: new MarkovLogitsProcessor(markovGenerator, markovWeights),
-      weight: 0.2 // Lambda Markov
-    });
-  }
-
-  const sequenceScorers = [
-    {
-      scorer: new CyclicSequenceScorer(computeCyclicLossBatch),
-      weight: 10 // Lambda Bidirectional Rerank
-    }
-  ];
-
-  // 2. Run Inference
-  // 1. Get the IPA via Beam Search
-  const ipa = await decodeBeamBatched(word, "<", 10, 1.0, 0.6, logitsProcessors, sequenceScorers);
-  const back_word = await decodeBeamBatched(ipa, ">", 10, 1.0, 0.6, [], sequenceScorers);
-
-  // 2. Calculate the reverse forced loss
-  const cyclicData = await computeCyclicLoss(ipa, word, ">");
-  const tableData = cyclicData.details.map((row, index) => ({
-    Step: index + 1,
-    Char: row.char,
-    Prob: row.prob,
-    Loss: row.loss,
-  }));
-
-  console.log(
-    `%cCyclic Loss Analysis for "${word}"`,
-    "font-weight: bold; font-size: 14px;",
-  );
-  console.table(tableData);
-
-  document.getElementById("output").innerHTML = `
-<strong>IPA:</strong> ${ipa}
-<br>
-<strong>Reversed Word:</strong> ${back_word}
-<br>
-<strong>Avg Cyclic Loss:</strong> ${cyclicData.avgLoss}
-<br>
-(Lower is better. High loss on specific chars indicates phonetic ambiguity.)
-`;
-}
-
 export async function decodeBeamBatched(
+  model,
+  vocab,
+  invVocab,
   word,
   taskToken,
   beam_width = 3,
@@ -339,6 +266,9 @@ export async function decodeBeamBatched(
 }
 
 export async function computeCyclicLossBatch(
+  model,
+  vocab,
+  invVocab,
   generatedCandidates,
   originalInput,
   backwardTaskToken,
@@ -430,11 +360,17 @@ export async function computeCyclicLossBatch(
 }
 
 export async function computeCyclicLoss(
+  model,
+  vocab,
+  invVocab,
   generatedIpa,
   originalWord,
   backwardTaskToken,
 ) {
   const results = await computeCyclicLossBatch(
+    model,
+    vocab,
+    invVocab,
     [generatedIpa],
     originalWord,
     backwardTaskToken,
@@ -446,8 +382,11 @@ export async function computeCyclicLoss(
 // The Cyclic Loss model ONLY scores finished sequences.
 // TODO: Link up properly.
 export class CyclicSequenceScorer extends SequenceScorer {
-  constructor(computeCyclicLossBatchFn) {
+  constructor(model, vocab, invVocab, computeCyclicLossBatchFn) {
     super("CyclicLoss");
+    this.model = model;
+    this.vocab = vocab;
+    this.invVocab = invVocab;
     this.computeLoss = computeCyclicLossBatchFn;
   }
 
@@ -455,7 +394,7 @@ export class CyclicSequenceScorer extends SequenceScorer {
     const backwardTaskToken = context.taskToken === "<" ? ">" : "<";
     const textInputs = candidates.map(c => c.Text);
 
-    const lossResults = await this.computeLoss(textInputs, context.originalInput, backwardTaskToken);
+    const lossResults = await this.computeLoss(this.model, this.vocab, this.invVocab, textInputs, context.originalInput, backwardTaskToken);
     return lossResults.map(r => -parseFloat(r.avgLoss));
   }
 }
