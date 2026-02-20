@@ -1,3 +1,5 @@
+import {LogitsProcessor} from './shallow_fusion.js';
+
 export class MultiMarkovGenerator {
   constructor(jsonData) {
     this.order = jsonData.order;
@@ -102,5 +104,50 @@ export class MultiMarkovGenerator {
     }
 
     return generatedChars.join("");
+  }
+}
+
+
+export class MarkovLogitsProcessor extends LogitsProcessor {
+  constructor(markovGenerator, markovWeights) {
+    super("MarkovFusion");
+    this.generator = markovGenerator;
+    this.weights = markovWeights;
+  }
+
+  process(sequencesArr, vocabSize, context) {
+    if (context.taskToken !== "<") return null;
+
+    const beam_width = sequencesArr.length;
+    const markovBatch = [];
+
+    for (let b = 0; b < beam_width; b++) {
+      const beamSeq = sequencesArr[b];
+      let stateChars = [];
+      
+      for (let j = Math.max(0, beamSeq.length - this.generator.order); j < beamSeq.length; j++) {
+        let char = context.invVocab[beamSeq[j]];
+        if (char === "[") char = this.generator.START_TOKEN;
+        stateChars.push(char);
+      }
+      while (stateChars.length < this.generator.order) {
+        stateChars.unshift(this.generator.START_TOKEN);
+      }
+
+      const probsInfo = this.generator._getFusedProbabilities(stateChars, this.weights);
+      let markovArr = new Array(vocabSize).fill(Math.log(1e-5)); 
+
+      if (probsInfo) {
+        for (let v = 0; v < probsInfo.population.length; v++) {
+          const char = probsInfo.population[v];
+          const vocabIdx = context.vocab[char];
+          if (vocabIdx !== undefined) {
+            markovArr[vocabIdx] = Math.log(probsInfo.probabilities[v] + 1e-5);
+          }
+        }
+      }
+      markovBatch.push(markovArr);
+    }
+    return tf.tensor2d(markovBatch, [beam_width, vocabSize], "float32");
   }
 }
