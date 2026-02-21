@@ -60,13 +60,13 @@ async function generateBidirectionalPronunciation(word) {
     const { model, vocab, invVocab, markovGenerator } = AppState;
 
     // 1. Define Modifiers
-    const logitsProcessors = [];
-    if (markovGenerator) {
-        logitsProcessors.push({
+    // TODO: Add names.
+    const logitsProcessors = [
+       {
             processor: new MarkovLogitsProcessor(markovGenerator, CONFIG.MARKOV_WEIGHTS),
             weight: 0.2 // Lambda Markov
-        });
-    }
+        }
+    ];
 
     const sequenceScorers = [
         {

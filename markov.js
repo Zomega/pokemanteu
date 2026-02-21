@@ -1,3 +1,4 @@
+import * as tf from 'https://esm.run/@tensorflow/tfjs';
 import {LogitsProcessor} from './shallow_fusion.js';
 
 export class MultiMarkovGenerator {
@@ -116,15 +117,20 @@ export class MarkovLogitsProcessor extends LogitsProcessor {
   }
 
   process(sequencesArr, vocabSize, context) {
+    // Only apply during IPA generation
     if (context.taskToken !== "<") return null;
 
     const beam_width = sequencesArr.length;
     const markovBatch = [];
 
+    // Create a harsh penalty for completely impossible transitions
+    // (e.g., -20 is a massive log-prob penalty)
+    const BASE_PENALTY = -20.0;
+
     for (let b = 0; b < beam_width; b++) {
       const beamSeq = sequencesArr[b];
       let stateChars = [];
-      
+
       for (let j = Math.max(0, beamSeq.length - this.generator.order); j < beamSeq.length; j++) {
         let char = context.invVocab[beamSeq[j]];
         if (char === "[") char = this.generator.START_TOKEN;
@@ -135,16 +141,24 @@ export class MarkovLogitsProcessor extends LogitsProcessor {
       }
 
       const probsInfo = this.generator._getFusedProbabilities(stateChars, this.weights);
-      let markovArr = new Array(vocabSize).fill(Math.log(1e-5)); 
 
-      if (probsInfo) {
+      // Initialize row with the base penalty
+      let markovArr = new Array(vocabSize).fill(BASE_PENALTY);
+
+      if (probsInfo && probsInfo.population.length > 0) {
         for (let v = 0; v < probsInfo.population.length; v++) {
           const char = probsInfo.population[v];
           const vocabIdx = context.vocab[char];
           if (vocabIdx !== undefined) {
-            markovArr[vocabIdx] = Math.log(probsInfo.probabilities[v] + 1e-5);
+             // Convert probability [0, 1] to log-prob (-inf, 0].
+             // Add small epsilon so Math.log(0) doesn't return -Infinity.
+            markovArr[vocabIdx] = Math.log(probsInfo.probabilities[v] + 1e-9);
           }
         }
+      } else {
+         // DEAD END: If the Markov model has NO IDEA what comes next,
+         // don't penalize anything. Let the Keras model decide.
+         markovArr.fill(0.0);
       }
       markovBatch.push(markovArr);
     }

@@ -17,10 +17,7 @@ export async function decodeBeamBatched(
   sequenceScorers = []   // Array of { scorer: SequenceScorer, weight: number }
 ) {
   const fusionContext = { originalInput: word, taskToken, vocab, invVocab };
-  // TODO: Plumn in logitsProcessors and sequenceScorers
 
-  // TODO: Remove once no longer used.
-  const lambda_bidir_rerank = 6;
   // PHASE 1: Generate Candidates (Forward Pass)
   const candidates = tf.tidy(() => {
     let cleanInput = word;
@@ -54,7 +51,10 @@ export async function decodeBeamBatched(
     let finishedSeqs = [];
     let finishedScores = [];
 
-    // TODO: Ensure that we can track which logitsProcessors are scoring what after the fact.
+    // Tracking arrays for LogitsProcessors
+    let activeProcessorTracking = Array.from({ length: beam_width }, () => ({}));
+    let finishedProcessorTracking = [];
+
     for (let i = 0; i < MAX_LEN - 1; i++) {
       const currLen = sequences.shape[1];
       const padSize = MAX_LEN - 1 - currLen;
@@ -75,22 +75,50 @@ export async function decodeBeamBatched(
       const nextTokenLogits = preds
         .gather([currLen - 1], 1)
         .reshape([beam_width, -1]);
-      const logProbs = tf.log(nextTokenLogits.add(1e-9));
 
-      // >>> 2. APPLY TEMPERATURE SCALING >>>
-      // TODO: Seems like we should apply regardless?
+      // Use let so we can modify it
+      let logProbs = tf.log(nextTokenLogits.add(1e-9));
+
+      // >>> 1. APPLY TEMPERATURE SCALING >>>
       if (temperature !== 1.0) {
         const scaledLogProbs = tf.tidy(() => {
-          // Divide the log-probabilities by the temperature
           const scaled = logProbs.div(temperature);
-          // Re-normalize using logSoftmax so they remain valid probabilities
           return tf.logSoftmax(scaled);
         });
 
         logProbs.dispose(); // Prevent memory leak
-        logProbs = scaledLogProbs; // Reassign
+        logProbs = scaledLogProbs;
       }
-      // <<< END TEMPERATURE <<<
+
+      // >>> 2. SHALLOW FUSION: LOGITS PROCESSING >>>
+      const stepDeltas = {};
+
+      for (const { processor, weight } of logitsProcessors) {
+        if (weight === 0) continue;
+
+        const deltaInfo = tf.tidy(() => {
+          const vocabSize = logProbs.shape[1];
+          const deltaTensor = processor.process(sequences.arraySync(), vocabSize, fusionContext);
+
+          if (deltaTensor) {
+            const weightedDelta = deltaTensor.mul(weight);
+            return {
+              tensor: weightedDelta,
+              jsArr: weightedDelta.arraySync() // Extract values for tracking
+            };
+          }
+          return null;
+        });
+
+        if (deltaInfo) {
+          stepDeltas[processor.name] = deltaInfo.jsArr;
+
+          const newLogProbs = logProbs.add(deltaInfo.tensor);
+          logProbs.dispose();
+          logProbs = newLogProbs;
+          deltaInfo.tensor.dispose();
+        }
+      }
 
       const candidateScores = scores.expandDims(1).add(logProbs);
       const flatScores = candidateScores.reshape([-1]);
@@ -114,20 +142,32 @@ export async function decodeBeamBatched(
 
       const nextSeqs = [];
       const nextScoresArr = [];
+      const nextProcessorTracking = [];
 
       for (let k = 0; k < beam_width; k++) {
         const bIdx = bIdxArr[k];
         const token = tIdxArr[k];
         const score = sArr[k];
 
+        // Track processor influence for this specific branch
+        const newTrack = { ...activeProcessorTracking[bIdx] };
+        for (const pName in stepDeltas) {
+          const appliedScore = stepDeltas[pName][bIdx][token];
+          newTrack[pName] = (newTrack[pName] || 0) + appliedScore;
+        }
+
         if (token === STOP_TOKEN) {
           finishedSeqs.push(seqsArr[bIdx]);
           finishedScores.push(score);
+          finishedProcessorTracking.push(newTrack);
+
           nextSeqs.push([...seqsArr[bIdx], PAD_TOKEN]);
           nextScoresArr.push(-1e9);
+          nextProcessorTracking.push({});
         } else {
           nextSeqs.push([...seqsArr[bIdx], token]);
           nextScoresArr.push(score);
+          nextProcessorTracking.push(newTrack);
         }
       }
 
@@ -137,6 +177,7 @@ export async function decodeBeamBatched(
         "int32",
       );
       scores = tf.tensor1d(nextScoresArr);
+      activeProcessorTracking = nextProcessorTracking; // Update state
 
       if (finishedSeqs.length >= beam_width) {
         const finishedWithAlpha = finishedScores.map((s, idx) => {
@@ -159,11 +200,13 @@ export async function decodeBeamBatched(
     const finalActiveSeqs = sequences.arraySync();
     const finalActiveScores = scores.arraySync();
     let allCandidates = [];
+
     for (let i = 0; i < finishedSeqs.length; i++) {
       allCandidates.push({
         seq: finishedSeqs[i],
         rawScore: finishedScores[i],
         status: "DONE",
+        processorTracking: finishedProcessorTracking[i]
       });
     }
     for (let i = 0; i < finalActiveSeqs.length; i++) {
@@ -172,6 +215,7 @@ export async function decodeBeamBatched(
           seq: finalActiveSeqs[i],
           rawScore: finalActiveScores[i],
           status: "MAX_LEN",
+          processorTracking: activeProcessorTracking[i]
         });
       }
     }
@@ -189,10 +233,11 @@ export async function decodeBeamBatched(
           "Alpha Score": alphaScore,
           "Raw LogProb": c.rawScore,
           Status: c.status,
+          processorTracking: c.processorTracking // Pass tracking data through
         };
       })
       .sort((a, b) => b["Alpha Score"] - a["Alpha Score"]);
-  });
+  }); // End tf.tidy
 
   // --- PHASE 2 & 3: Sequence Scorers & Reranking ---
 
@@ -202,22 +247,15 @@ export async function decodeBeamBatched(
   });
 
   // 2. Apply each Sequence Scorer dynamically
-  // Note: fusionContext should be defined at the top of decodeBeamBatched as:
-  // const fusionContext = { originalInput: word, taskToken, vocab, invVocab };
   for (const { scorer, weight } of sequenceScorers) {
     if (weight === 0) continue;
 
-    // Get an array of modifiers (e.g., negative cyclic loss) parallel to the candidates
     const finishScores = await scorer.score(candidates, fusionContext);
 
     if (finishScores) {
       for (let i = 0; i < candidates.length; i++) {
         const scoreDelta = weight * finishScores[i];
-
-        // Add the weighted modifier to the fused score
         candidates[i]["Fused Score"] += scoreDelta;
-
-        // Save the raw score on the candidate for logging purposes
         candidates[i][`ScorerRaw_${scorer.name}`] = finishScores[i].toFixed(4);
       }
     }
@@ -228,39 +266,44 @@ export async function decodeBeamBatched(
 
   // 4. Build and log the detailed reranking table dynamically
   const tableData = candidates.map((row, idx) => {
-    // Base columns that are always present
     const tableRow = {
-      "Final Rank": idx + 1,
+      "Rank": idx + 1,
       "Text": row.Text,
       "Fused Score": row["Fused Score"].toFixed(4),
       "Fwd Alpha": row["Alpha Score"].toFixed(4),
       "Status": row.Status,
     };
 
-    // Dynamically append columns for any active scorers
+    // Dynamically append columns for Logits Processors
+    if (row.processorTracking) {
+      for (const [pName, accumulatedScore] of Object.entries(row.processorTracking)) {
+        const config = logitsProcessors.find(p => p.processor.name === pName);
+        const w = config ? config.weight : "?";
+        tableRow[`LP: ${pName} (w=${w})`] = accumulatedScore.toFixed(4);
+      }
+    }
+
+    // Dynamically append columns for Sequence Scorers
     for (const { scorer, weight } of sequenceScorers) {
       if (weight !== 0 && row[`ScorerRaw_${scorer.name}`] !== undefined) {
-        // e.g. Creates a column named "CyclicLoss (w=10)"
-        tableRow[`${scorer.name} (w=${weight})`] = row[`ScorerRaw_${scorer.name}`];
+        tableRow[`SS: ${scorer.name} (w=${weight})`] = row[`ScorerRaw_${scorer.name}`];
       }
     }
 
     return tableRow;
   });
 
-  // Create a dynamic title string showing which scorers were used
-  const activeScorersStr = sequenceScorers
-    .filter(s => s.weight !== 0)
-    .map(s => `${s.scorer.name}=${s.weight}`)
-    .join(" | ");
+  const activeStr = [
+    ...logitsProcessors.filter(p => p.weight > 0).map(p => `LP_${p.processor.name}=${p.weight}`),
+    ...sequenceScorers.filter(s => s.weight > 0).map(s => `SS_${s.scorer.name}=${s.weight}`)
+  ].join(" | ");
 
   console.log(
-    `%cPost-Hoc Reranking (${taskToken}) | Scorers: ${activeScorersStr || "None"}`,
-    "font-weight: bold; color: #FF9800; font-size: 12px;",
+    `%cBeam Search (${taskToken}) | ${activeStr || "Vanilla Keras"}`,
+    "font-weight: bold; color: #4CAF50; font-size: 12px;",
   );
   console.table(tableData);
 
-  // --- RETURN BEST ---
   // We now return the top-ranked item after fusion.
   return candidates.length > 0 ? candidates[0].Text : "";
 }
