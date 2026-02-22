@@ -1,10 +1,12 @@
 import * as tf from 'https://esm.run/@tensorflow/tfjs';
-import {LogitsProcessor} from './shallow_fusion.js';
+import { LogitsProcessor } from './shallow_fusion.js';
 
 export class MultiMarkovGenerator {
   constructor(jsonData) {
     this.order = jsonData.order;
     this.models = {};
+    // Grab the default weights saved by Python (fallback to empty object if missing)
+    this.defaultWeights = jsonData.default_weights || {}; 
     this.START_TOKEN = "<START>";
     this.END_TOKEN = "<END>";
 
@@ -19,7 +21,7 @@ export class MultiMarkovGenerator {
         this.models[modelName][normalizedKey] = counts;
       }
     }
-    console.log("Markov Models loaded:", Object.keys(this.models));
+    console.log(`Markov Models loaded: ${Object.keys(this.models)} (Order: ${this.order})`);
   }
 
   _getFusedProbabilities(state, weights) {
@@ -76,12 +78,20 @@ export class MultiMarkovGenerator {
     return items[items.length - 1]; // Safe fallback
   }
 
-  generate(weights, minLength = 4, maxLength = 12) {
+  // Allow generating without passing weights by falling back to the saved defaults
+  generate(weights = null, minLength = 4, maxLength = 12) {
+    const activeWeights = weights || this.defaultWeights;
+    
+    if (!activeWeights || Object.keys(activeWeights).length === 0) {
+        console.warn("No weights provided and no default weights found.");
+        return "";
+    }
+
     let currentState = Array(this.order).fill(this.START_TOKEN);
     let generatedChars = [];
 
     while (generatedChars.length < maxLength) {
-      const probs = this._getFusedProbabilities(currentState, weights);
+      const probs = this._getFusedProbabilities(currentState, activeWeights);
 
       if (!probs) break; // Dead end hit
 
@@ -95,7 +105,7 @@ export class MultiMarkovGenerator {
           break;
         } else {
           // Too short, restart recursively
-          return this.generate(weights, minLength, maxLength);
+          return this.generate(activeWeights, minLength, maxLength);
         }
       }
 
@@ -108,17 +118,19 @@ export class MultiMarkovGenerator {
   }
 }
 
-
 export class MarkovLogitsProcessor extends LogitsProcessor {
-  constructor(markovGenerator, markovWeights) {
-    super("MarkovFusion");
+  // Added targetTaskToken so we can use this for BOTH phonemes and graphemes
+  constructor(name, markovGenerator, markovWeights, targetTaskToken) {
+    super(name);
     this.generator = markovGenerator;
-    this.weights = markovWeights;
+    // Fall back to the JSON's default weights if none are explicitly passed
+    this.weights = markovWeights || markovGenerator.defaultWeights;
+    this.targetTaskToken = targetTaskToken; 
   }
 
   process(sequencesArr, vocabSize, context) {
-    // Only apply during IPA generation
-    if (context.taskToken !== "<") return null;
+    // Only apply during the specific generation phase (e.g. "<" for IPA, ">" for Word)
+    if (context.taskToken !== this.targetTaskToken) return null;
 
     const beam_width = sequencesArr.length;
     const markovBatch = [];

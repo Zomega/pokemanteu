@@ -11,16 +11,16 @@ import {
 const CONFIG = {
     MODEL_URL: "./tfjs_model/model.json",
     VOCAB_URL: "./vocab.json",
-    MARKOV_URL: "./multi_markov.json",
-    MARKOV_WEIGHTS: { "pokemon": 0.8, "english": 0.2 } // Extracted to config
+    MARKOV_PHONEMES_URL: "./markov_phonemes.json",
+    MARKOV_GRAPHEMES_URL: "./markov_graphemes.json"
 };
 
-// State object to keep things organized
 const AppState = {
     model: null,
     vocab: null,
     invVocab: null,
-    markovGenerator: null
+    phonemeMarkov: null,
+    graphemeMarkov: null
 };
 
 
@@ -29,24 +29,28 @@ async function initializeApp() {
     try {
         console.log("Starting initialization...");
 
-        // Fire off all network requests concurrently for faster loading
-        const [model, vocabResp, markovResp] = await Promise.all([
+        // Fire off all network requests concurrently
+        const [model, vocabResp, phonemeResp, graphemeResp] = await Promise.all([
             tf.loadGraphModel(CONFIG.MODEL_URL),
             fetch(CONFIG.VOCAB_URL),
-            fetch(CONFIG.MARKOV_URL)
+            fetch(CONFIG.MARKOV_PHONEMES_URL),
+            fetch(CONFIG.MARKOV_GRAPHEMES_URL)
         ]);
 
-        // Parse JSON responses
+        // Parse JSON
         const vocab = await vocabResp.json();
-        const markovData = await markovResp.json();
+        const phonemeData = await phonemeResp.json();
+        const graphemeData = await graphemeResp.json();
 
         // Assign to global state
         AppState.model = model;
         AppState.vocab = vocab;
         AppState.invVocab = Object.fromEntries(Object.entries(vocab).map(([k, v]) => [v, k]));
-        AppState.markovGenerator = new MultiMarkovGenerator(markovData);
 
-        console.log("App ready! TFJS and Markov models loaded.");
+        AppState.phonemeMarkov = new MultiMarkovGenerator(phonemeData);
+        AppState.graphemeMarkov = new MultiMarkovGenerator(graphemeData);
+
+        console.log("App ready! TFJS and dual Markov models loaded.");
     } catch (error) {
         console.error("Failed to initialize app:", error);
     }
@@ -57,40 +61,51 @@ async function initializeApp() {
 async function generateBidirectionalPronunciation(word) {
     if (!AppState.model) throw new Error("Model not loaded yet.");
 
-    const { model, vocab, invVocab, markovGenerator } = AppState;
+    const { model, vocab, invVocab, phonemeMarkov, graphemeMarkov } = AppState;
 
     // 1. Define Modifiers
-    // TODO: Add names.
-    const logitsProcessors = [
-       {
-            processor: new MarkovLogitsProcessor(markovGenerator, CONFIG.MARKOV_WEIGHTS),
-            weight: 0.2 // Lambda Markov
-        }
-    ];
+    const logitsProcessors = [];
+
+    // Add Phoneme Markov (Applies only when task is "<")
+    if (phonemeMarkov) {
+        logitsProcessors.push({
+            processor: new MarkovLogitsProcessor("Markov_IPA", phonemeMarkov, null, "<"),
+            weight: 0.2
+        });
+    }
+
+    // Add Grapheme Markov (Applies only when task is ">")
+    if (graphemeMarkov) {
+        logitsProcessors.push({
+            processor: new MarkovLogitsProcessor("Markov_Word", graphemeMarkov, null, ">"),
+            weight: 0.4
+        });
+    }
 
     const sequenceScorers = [
         {
             scorer: new CyclicSequenceScorer(model, vocab, invVocab, computeCyclicLossBatch),
-            weight: 10 // Lambda Bidirectional Rerank
+            weight: 10
         }
     ];
 
-    // 2. Run Forward Pass (Word -> IPA) with Markov steering
+    // 2. Run Forward Pass (Word -> IPA)
+    // The "Markov_IPA" processor will automatically engage because task is "<"
     const ipa = await decodeBeamBatched(
         model, vocab, invVocab, word, "<", 10, 1.0, 0.6,
         logitsProcessors, sequenceScorers
     );
 
-    // 3. Run Backward Pass (IPA -> Word) without Markov steering (Markov only knows IPA!)
+    // 3. Run Backward Pass (IPA -> Word)
+    // The "Markov_Word" processor will automatically engage because task is ">"
     const back_word = await decodeBeamBatched(
         model, vocab, invVocab, ipa, ">", 10, 1.0, 0.6,
-        [], sequenceScorers
+        logitsProcessors, sequenceScorers
     );
 
     // 4. Calculate final diagnostic loss
     const cyclicData = await computeCyclicLoss(model, vocab, invVocab, ipa, word, ">");
 
-    // Return the clean data object
     return { ipa, back_word, cyclicData };
 }
 
@@ -98,19 +113,27 @@ async function generateBidirectionalPronunciation(word) {
 // --- 4. UI HANDLERS (Reads DOM, Calls Logic, Updates DOM) ---
 
 // Hook up the Inference Button
-document.getElementById('inference-btn').addEventListener('click', async () => {
+document.getElementById('inference-btn').addEventListener('click', async (event) => {
+    // 1. Guard clause: Ensure TFJS is loaded
+    if (!AppState.model) {
+        alert("Models are still loading. Please wait a moment!");
+        return;
+    }
+
     const inputEl = document.getElementById("inputWord");
+    const buttonEl = event.target; // The button that was clicked
     const outputSpan = document.getElementById('output');
     const word = inputEl.value.trim();
 
     if (!word) return;
 
-    // UI Loading State
-    outputSpan.innerText = "Processing Bidirectional Beam Search...";
+    // 2. UI Loading State (Lock both input and button)
+    outputSpan.innerHTML = "<em>Processing Bidirectional Beam Search...</em>";
     inputEl.disabled = true;
+    buttonEl.disabled = true;
 
     try {
-        // Call the pure logic function
+        // Call the pure logic function (which now handles BOTH Markov models internally)
         const { ipa, back_word, cyclicData } = await generateBidirectionalPronunciation(word);
 
         // Map data for the console table
@@ -124,9 +147,9 @@ document.getElementById('inference-btn').addEventListener('click', async () => {
         console.log(`%cCyclic Loss Analysis for "${word}"`, "font-weight: bold; font-size: 14px;");
         console.table(tableData);
 
-        // Update DOM with results
+        // 3. Update DOM with results
         outputSpan.innerHTML = `
-            <strong>IPA:</strong> ${ipa} <br>
+            <strong>IPA:</strong> /${ipa}/ <br>
             <strong>Reversed Word:</strong> ${back_word} <br>
             <strong>Avg Cyclic Loss:</strong> ${cyclicData.avgLoss} <br>
             <span style="font-size: 0.85em; color: gray;">
@@ -135,17 +158,19 @@ document.getElementById('inference-btn').addEventListener('click', async () => {
         `;
     } catch (err) {
         console.error(err);
-        outputSpan.innerText = `Error: ${err.message}`;
+        outputSpan.innerHTML = `<span style="color: red;">Error: ${err.message}</span>`;
     } finally {
-        inputEl.disabled = false; // Release UI lock
+        // 4. Release UI locks
+        inputEl.disabled = false;
+        buttonEl.disabled = false;
+        inputEl.focus(); // Nice UX touch: put cursor back in the box
     }
 });
 
 // Hook up the Markov Output Button
 // Hook up the Markov Output Button
 document.getElementById('generate-btn').addEventListener('click', async () => {
-    // Ensure both models are loaded before running
-    if (!AppState.markovGenerator || !AppState.model) {
+    if (!AppState.phonemeMarkov || !AppState.model) {
         console.warn("Models not fully loaded yet.");
         return;
     }
@@ -153,15 +178,19 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     const outputDiv = document.getElementById('markov-output');
     outputDiv.innerHTML = "<em>Generating and decoding 10 words... Please wait.</em>";
 
-    const { model, vocab, invVocab } = AppState;
+    const { model, vocab, invVocab, graphemeMarkov, phonemeMarkov } = AppState;
 
-    // We can reuse the CyclicSequenceScorer for the reverse translation
+    // Use Grapheme Markov to guide the spelling generation
+    const logitsProcessors = graphemeMarkov ? [{
+        processor: new MarkovLogitsProcessor("Markov_Word", graphemeMarkov, null, ">"),
+        weight: 0.2
+    }] : [];
+
     const sequenceScorers = [{
         scorer: new CyclicSequenceScorer(model, vocab, invVocab, computeCyclicLossBatch),
         weight: 10
     }];
 
-    // Start building the HTML table
     let tableHTML = `
         <table border="1" style="border-collapse: collapse; margin-top: 15px; text-align: left; width: 100%; max-width: 400px;">
             <thead>
@@ -173,19 +202,16 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
             <tbody>
     `;
 
-    // Generate 10 words
     for (let i = 0; i < 10; i++) {
-        // 1. Generate the random IPA using the Markov model
-        const ipa = AppState.markovGenerator.generate(CONFIG.MARKOV_WEIGHTS, 4, 12);
+        // Generate IPA. We don't pass weights; it defaults to the embedded JSON weights!
+        const ipa = phonemeMarkov.generate(null, 4, 12);
 
-        // 2. Feed the IPA into the Neural Net to guess the spelling (Task Token ">")
-        // Note: We pass [] for logitsProcessors because Markov only knows IPA, not English letters!
+        // Feed IPA into Neural Net to guess spelling, guided by the English/Poke spelling Markov model!
         const guessedWord = await decodeBeamBatched(
             model, vocab, invVocab, ipa, ">", 10, 1.0, 0.6,
-            [], sequenceScorers
+            logitsProcessors, sequenceScorers
         );
 
-        // Append the row to the table
         tableHTML += `
             <tr>
                 <td style="font-family: monospace; padding: 8px;">/${ipa}/</td>
@@ -195,8 +221,6 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     }
 
     tableHTML += `</tbody></table>`;
-
-    // Render the final table to the DOM
     outputDiv.innerHTML = tableHTML;
 });
 
