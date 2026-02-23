@@ -65,18 +65,14 @@ async function generateBidirectionalPronunciation(word) {
     } = AppState;
 
     const logitsProcessors = [];
-    if (phonemeMarkov) {
-        logitsProcessors.push({
-            processor: new MarkovLogitsProcessor("Markov_IPA", phonemeMarkov, null, "<"),
-            weight: 0.2
-        });
-    }
-    if (graphemeMarkov) {
-        logitsProcessors.push({
-            processor: new MarkovLogitsProcessor("Markov_Word", graphemeMarkov, null, ">"),
-            weight: 0.2
-        });
-    }
+    logitsProcessors.push({
+        processor: new MarkovLogitsProcessor("Markov_IPA", phonemeMarkov, null, "<"),
+        weight: 0.2
+    });
+    logitsProcessors.push({
+        processor: new MarkovLogitsProcessor("Markov_Word", graphemeMarkov, null, ">"),
+        weight: 0.2
+    });
 
     const sequenceScorers = [{
         scorer: new CyclicSequenceScorer(engine),
