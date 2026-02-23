@@ -1,57 +1,52 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>PokePhonics Inference</title>
-  </head>
-  <body>
-    <h1>PokePhonics Browser Inference</h1>
-
-    <input type="text" id="inputWord" value="Pikachu" placeholder="Enter Pokémon Name">
-    <button id="inference-btn">Generate IPA</button>
-    <p>
-      <strong>Output:</strong>
-      <span id="output">...</span>
-    </p>
-
-    <div class="controls">
-        <h2>Markov Generator</h2>
-        <button id="generate-btn">Generate 10 Words</button>
-    </div>
-
-    <div id="markov-output"></div>
-
-    <hr>
-<div class="controls">
-    <input type="text" id="clipQuery" placeholder="Describe a creature...">
-    <button id="search-btn" disabled>Search Text</button>
-    
-    <div style="margin-top: 10px;">
-        <label for="image-upload" style="font-size: 0.9em; cursor: pointer; color: #007bff; text-decoration: underline;">
+   <head>
+      <title>PokePhonics Inference</title>
+   </head>
+   <body>
+      <h1>PokePhonics Browser Inference</h1>
+      <input type="text" id="inputWord" value="Pikachu" placeholder="Enter Pokémon Name">
+      <button id="inference-btn">Generate IPA</button>
+      <p>
+         <strong>Output:</strong>
+         <span id="output">...</span>
+      </p>
+      <hr>
+      <div class="controls">
+         <h2>Markov Generator</h2>
+         <button id="generate-btn">Generate 10 Words</button>
+      </div>
+      <div id="markov-output"></div>
+      <hr>
+      <div class="controls">
+         <input type="text" id="clipQuery" placeholder="Describe a creature...">
+         <button id="search-btn" disabled>Search Text</button>
+         <div style="margin-top: 10px;">
+            <label for="image-upload" style="font-size: 0.9em; cursor: pointer; color: #007bff; text-decoration: underline;">
             Or upload an image to find concepts...
-        </label>
-        <input type="file" id="image-upload" accept="image/*" style="display: none;" disabled>
-    </div>
-</div>
-
-<div id="search-results-container" style="margin-top: 20px;">
-    <table border="1" style="width: 100%; border-collapse: collapse; text-align: left;">
-        <thead>
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 8px;">Concept</th>
-                <th style="padding: 8px;">Semantic Similarity</th>
-            </tr>
-        </thead>
-        <tbody id="results-body">
-            <tr>
-                <td colspan="2" style="padding: 8px; text-align: center; color: #999;">
-                    Loading model and database...
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
-    <script type="module" src="main.js"></script>
-    <script type="module" src="clip_demo.js"></script>
-  </body>
+            </label>
+            <input type="file" id="image-upload" accept="image/*" style="display: none;" disabled>
+         </div>
+      </div>
+      <div id="search-results-container" style="margin-top: 20px;">
+         <table border="1" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+               <tr style="background-color: #f2f2f2;">
+                  <th style="padding: 8px;">Concept</th>
+                  <th style="padding: 8px;">Semantic Similarity</th>
+               </tr>
+            </thead>
+            <tbody id="results-body">
+               <tr>
+                  <td colspan="2" style="padding: 8px; text-align: center; color: #999;">
+                     Loading model and database...
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+      <script type="module" src="main.js"></script>
+      <script type="module" src="clip_demo.js"></script>
+      <script type="module" src="portmanteau_demo.js"></script>
+   </body>
 </html>
