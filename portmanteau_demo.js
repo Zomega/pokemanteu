@@ -25,6 +25,7 @@ async function setupPage() {
 
     console.log("Portmanteau Results:",  generatePortmanteaus("bulb", "dinosaur"));
     console.log("Portmanteau Results:",  generatePortmanteaus("char", "salamander"));
+    console.log("Portmanteau Results:",  generatePortmanteaus("scorch", "bunny"));
     console.log("Portmanteau Results:",  generatePortmanteaus("lit", "kitten"));
     console.log("Portmanteau Results:",  generatePortmanteaus("incinerate", "roar"));
 }
