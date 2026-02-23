@@ -49,8 +49,8 @@ Snarl
 Snatch
 Steal
 Taunt
-Theif
-Theives
+Thief
+Thieves
 Torment
 Tyrant
 Umbral

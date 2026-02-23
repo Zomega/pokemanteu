@@ -12,12 +12,12 @@ Copper
 Drill
 Dross
 Durable
-Ferros
+Ferrous
 Knight
 Magnet
 Melt
 Metal
-Scizzor
+Scissor
 Sharp
 Shield
 Slash

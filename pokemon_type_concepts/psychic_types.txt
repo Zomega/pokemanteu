@@ -13,7 +13,7 @@ Delphi
 Destiny
 Doll
 Dream
-Drowze
+Drowse
 Eerie
 Esp
 Extrasensory
@@ -53,7 +53,7 @@ Soul
 Star
 Swap
 Swoon
-Synchronoise
+Synchronise
 Telekinesis
 Teleport
 Tone

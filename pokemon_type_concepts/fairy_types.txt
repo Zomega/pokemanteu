@@ -24,7 +24,7 @@ Imp
 Jiggle
 Kiss
 Lull
-Magestic
+Majestic
 Mancy
 Moon
 Moonlight
@@ -46,5 +46,5 @@ Tinker
 Tinkle
 Tuft
 Twinkle
-Whimiscal
+Whimsical
 Wind

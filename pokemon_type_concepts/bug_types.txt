@@ -17,7 +17,7 @@ Needle
 Net
 Nom
 Parasite
-Phermone
+Pheromone
 Pin
 Pollen
 Powder
