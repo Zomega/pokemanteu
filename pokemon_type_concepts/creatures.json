@@ -1,0 +1,2020 @@
+{
+  "word": "ROOT",
+  "silent": true,
+  "unsearchable": true,
+  "children": [
+    {
+      "word": "INANIMATE",
+      "silent": true,
+      "unsearchable": true,
+      "children": [
+        {
+          "word": "egg",
+          "ipa": "ˈɛɡ"
+        },
+        {
+          "word": "nut",
+          "ipa": "ˈnət"
+        },
+        {
+          "word": "cloud",
+          "ipa": "ˈkɫaʊd"
+        },
+        {
+          "word": "blob",
+          "ipa": "ˈbɫɑb"
+        },
+        {
+          "word": "rock",
+          "ipa": "ˈɹɑk"
+        },
+        {
+          "word": "crystal",
+          "ipa": "ˈkɹɪstəɫ"
+        },
+        {
+          "word": "golem",
+          "ipa": "ˈɡoʊɫəm"
+        },
+        {
+          "word": "igloo",
+          "ipa": "ˈɪɡɫu",
+          "tags": [
+            "ice"
+          ]
+        },
+        {
+          "word": "totem",
+          "ipa": "ˈtoʊtəm"
+        },
+        {
+          "word": "skull",
+          "ipa": "ˈskəɫ"
+        },
+        {
+          "word": "ankh",
+          "ipa": "ˈænk"
+        },
+        {
+          "word": "LITTLEGUY",
+          "silent": true,
+          "unsearchable": true,
+          "children": [
+            {
+              "word": "doll",
+              "ipa": "ˈdɑɫ"
+            },
+            {
+              "word": "key",
+              "ipa": "ˈki"
+            },
+            {
+              "word": "orb",
+              "ipa": "ˈɔɹb",
+              "children": [
+                {
+                  "word": "sphere",
+                  "transparent": true,
+                  "ipa": "ˈsfɪɹ"
+                }
+              ]
+            },
+            {
+              "word": "bro",
+              "transparent": true,
+              "ipa": "ˈbɹoʊ"
+            },
+            {
+              "word": "dude",
+              "transparent": true,
+              "ipa": "ˈdud"
+            },
+            {
+              "word": "kin",
+              "transparent": true,
+              "ipa": "ˈkɪn"
+            },
+            {
+              "word": "lass",
+              "transparent": true,
+              "ipa": "ˈɫæs"
+            },
+            {
+              "word": "mite",
+              "unsearchable": true,
+              "ipa": "ˈmaɪt"
+            },
+            {
+              "word": "pint",
+              "unsearchable": true,
+              "ipa": "ˈpaɪnt"
+            },
+            {
+              "word": "runt",
+              "transparent": true,
+              "ipa": "ɹʌnt"
+            },
+            {
+              "word": "tot",
+              "transparent": true,
+              "ipa": "ˈtɑt"
+            },
+            {
+              "word": "toy",
+              "transparent": true,
+              "ipa": "ˈtɔɪ"
+            },
+            {
+              "word": "tyke",
+              "transparent": true,
+              "ipa": "ˈtaɪk"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "word": "plant",
+      "silent": true,
+      "tags": [
+        "grass"
+      ],
+      "children": [
+        {
+          "word": "vine",
+          "ipa": "ˈvaɪn",
+          "children": [
+            {
+              "word": "whip",
+              "unsearchable": true,
+              "ipa": "ˈhwɪp"
+            },
+            {
+              "word": "creep",
+              "unsearchable": true,
+              "ipa": "ˈkɹip"
+            }
+          ]
+        },
+        {
+          "word": "tree",
+          "ipa": "ˈtɹi",
+          "children": [
+            {
+              "word": "wood",
+              "ipa": "ˈwʊd"
+            },
+            {
+              "word": "log",
+              "ipa": "ˈɫɔɡ"
+            }
+          ]
+        },
+        {
+          "word": "bulb",
+          "ipa": "ˈbəɫb"
+        },
+        {
+          "word": "stump",
+          "ipa": "ˈstəmp"
+        },
+        {
+          "word": "sprout",
+          "ipa": "ˈspɹaʊt"
+        },
+        {
+          "word": "bonsai",
+          "ipa": "bɑnˈsaɪ"
+        },
+        {
+          "word": "flower",
+          "ipa": "ˈfɫaʊɝ"
+        },
+        {
+          "word": "burr",
+          "ipa": "ˈbɝ"
+        },
+        {
+          "word": "pod",
+          "ipa": "ˈpɑd"
+        },
+        {
+          "word": "fruit",
+          "ipa": "ˈfɹut"
+        },
+        {
+          "word": "cactus",
+          "ipa": "ˈkæktəs"
+        },
+        {
+          "word": "chesnut",
+          "ipa": "ˈtʃɛsˌnət"
+        },
+        {
+          "word": "pinecone",
+          "ipa": "ˈpaɪnˌkoʊn"
+        },
+        {
+          "word": "kernel",
+          "ipa": "ˈkɝnəɫ"
+        },
+        {
+          "word": "kelp",
+          "ipa": "ˈkɛɫp",
+          "tags": [
+            "water"
+          ]
+        },
+        {
+          "word": "coral",
+          "ipa": "ˈkɔɹəɫ",
+          "tags": [
+            "rock"
+          ]
+        },
+        {
+          "word": "mushroom",
+          "ipa": "ˈməʃɹum",
+          "children": [
+            {
+              "word": "portobello",
+              "ipa": "ˌpɔːtəˈbeləʊ"
+            },
+            {
+              "word": "shiitake",
+              "ipa": "ʃɪtɑkeɪ"
+            },
+            {
+              "word": "crimini",
+              "ipa": "krɪˈmiːni"
+            },
+            {
+              "word": "enoki",
+              "ipa": "ɛˈnoʊkiː"
+            },
+            {
+              "word": "morel",
+              "ipa": "mɝˈɛɫ"
+            },
+            {
+              "word": "chanterelle",
+              "ipa": "tʃæntəɹɛl"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "word": "INVERTEBRATE",
+      "silent": true,
+      "unsearchable": true,
+      "children": [
+        {
+          "word": "ANCIENT_INVERTEBRATE",
+          "silent": true,
+          "unsearchable": true,
+          "children": [
+            {
+              "word": "ammonite",
+              "ipa": "ˈæməˌnaɪt"
+            },
+            {
+              "word": "trilobite",
+              "ipa": "tɹaɪləbaɪt"
+            },
+            {
+              "word": "anomalocaris",
+              "ipa": "əˌnɒməloʊˈkɛərɪs"
+            },
+            {
+              "word": "eurypterid",
+              "ipa": "jʊəɹɪptəɹɪd"
+            },
+            {
+              "word": "echinodermata",
+              "ipa": "ɪˌkaɪnoʊˈdɜːrmətə"
+            }
+          ]
+        },
+        {
+          "word": "barnacle",
+          "ipa": "ˈbɑɹnəkəɫ"
+        },
+        {
+          "word": "urchin",
+          "ipa": "ˈɝtʃən"
+        },
+        {
+          "word": "starfish",
+          "ipa": "ˈstɑɹˌfɪʃ"
+        },
+        {
+          "word": "SLIMY",
+          "silent": true,
+          "unsearchable": true,
+          "children": [
+            {
+              "word": "slime",
+              "unsearchable": true,
+              "ipa": "ˈsɫaɪm"
+            },
+            {
+              "word": "slimy",
+              "unsearchable": true,
+              "ipa": "ˈsɫaɪmi"
+            },
+            {
+              "word": "goo",
+              "unsearchable": true,
+              "ipa": "ˈɡu"
+            },
+            {
+              "word": "slick",
+              "unsearchable": true,
+              "ipa": "ˈsɫɪk"
+            },
+            {
+              "word": "slip",
+              "unsearchable": true,
+              "ipa": "ˈsɫɪp"
+            },
+            {
+              "word": "jellyfish",
+              "ipa": "ˈdʒɛɫiˌfɪʃ"
+            },
+            {
+              "word": "worm",
+              "ipa": "ˈwɝm"
+            },
+            {
+              "word": "slug",
+              "ipa": "ˈsɫəɡ"
+            },
+            {
+              "word": "snail",
+              "ipa": "ˈsneɪɫ"
+            },
+            {
+              "word": "escargot",
+              "ipa": "ɛskɑɹɡoʊ"
+            },
+            {
+              "word": "nudibranch",
+              "ipa": "njuːdɪbɹæŋk",
+              "children": [
+                {
+                  "word": "slug",
+                  "unsearchable": true,
+                  "ipa": "ˈsɫəɡ"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "word": "squid",
+          "ipa": "ˈskwɪd"
+        },
+        {
+          "word": "octopus",
+          "ipa": "ˈɑktəˌpʊs"
+        },
+        {
+          "word": "clam",
+          "ipa": "ˈkɫæm"
+        },
+        {
+          "word": "bug",
+          "ipa": "ˈbəɡ",
+          "tags": [
+            "bug"
+          ],
+          "children": [
+            {
+              "word": "shed",
+              "unsearchable": true,
+              "ipa": "ˈʃɛd",
+              "tags": [
+                "ghost"
+              ]
+            },
+            {
+              "word": "insect",
+              "ipa": "ˈɪnˌsɛkt"
+            },
+            {
+              "word": "BABY",
+              "silent": true,
+              "unsearchable": true,
+              "tags": [
+                "evo_baby"
+              ],
+              "children": [
+                {
+                  "word": "larva",
+                  "ipa": "ˈɫɑɹvə"
+                },
+                {
+                  "word": "grub",
+                  "ipa": "ˈɡɹəb"
+                },
+                {
+                  "word": "caterpiller",
+                  "ipa": "ˈkætəˌpɪɫɝ"
+                }
+              ]
+            },
+            {
+              "word": "MORPH",
+              "silent": true,
+              "unsearchable": true,
+              "tags": [
+                "evo_middle"
+              ],
+              "children": [
+                {
+                  "word": "pupa",
+                  "transparent": true,
+                  "ipa": "ˈpjupə"
+                },
+                {
+                  "word": "cocoon",
+                  "transparent": true,
+                  "ipa": "kəˈkun"
+                },
+                {
+                  "word": "chrysalis",
+                  "transparent": true,
+                  "ipa": "ˈkɹɪsəɫɪs"
+                },
+                {
+                  "word": "aurelia",
+                  "unsearchable": true,
+                  "ipa": "ˈɔːɹɪlˌaɪɐ"
+                }
+              ]
+            },
+            {
+              "word": "TINY",
+              "silent": true,
+              "unsearchable": true,
+              "children": [
+                {
+                  "word": "gnat",
+                  "ipa": "ˈnæt"
+                },
+                {
+                  "word": "mite",
+                  "ipa": "ˈmaɪt"
+                },
+                {
+                  "word": "louse",
+                  "ipa": "ˈɫaʊs"
+                },
+                {
+                  "word": "ant",
+                  "ipa": "ˈænt"
+                },
+                {
+                  "word": "tick",
+                  "ipa": "ˈtɪk"
+                }
+              ]
+            },
+            {
+              "word": "centipede",
+              "ipa": "ˈsɛntɪˌpid"
+            },
+            {
+              "word": "cicada",
+              "ipa": "səˈkeɪdə"
+            },
+            {
+              "word": "cockroach",
+              "silent": true,
+              "children": [
+                {
+                  "word": "roach",
+                  "unsearchable": true,
+                  "ipa": "ˈɹoʊtʃ"
+                }
+              ]
+            },
+            {
+              "word": "mantis",
+              "ipa": "ˈmæntɪs"
+            },
+            {
+              "word": "bee",
+              "ipa": "ˈbi"
+            },
+            {
+              "word": "wasp",
+              "ipa": "ˈwɑsp"
+            },
+            {
+              "word": "fly",
+              "ipa": "ˈfɫaɪ"
+            },
+            {
+              "word": "beetle",
+              "ipa": "ˈbitəɫ"
+            },
+            {
+              "word": "weevil",
+              "ipa": "ˈwivəɫ"
+            },
+            {
+              "word": "butterfly",
+              "ipa": "ˈbətɝˌfɫaɪ"
+            },
+            {
+              "word": "moth",
+              "ipa": "ˈmɔθ"
+            },
+            {
+              "word": "ladybug",
+              "ipa": "ˈɫeɪdiˌbəɡ"
+            },
+            {
+              "word": "cricket",
+              "ipa": "ˈkɹɪkət"
+            },
+            {
+              "word": "spider",
+              "ipa": "ˈspaɪdɝ",
+              "children": [
+                {
+                  "word": "spin",
+                  "unsearchable": true,
+                  "ipa": "ˈspɪn"
+                },
+                {
+                  "word": "arachnid",
+                  "unsearchable": true,
+                  "ipa": "əˈɹæknəd"
+                },
+                {
+                  "word": "tarantula",
+                  "ipa": "təˈɹæntʃəɫə"
+                },
+                {
+                  "word": "black widow",
+                  "silent": true,
+                  "children": [
+                    {
+                      "word": "widow",
+                      "unsearchable": true,
+                      "ipa": "ˈwɪdoʊ"
+                    }
+                  ]
+                },
+                {
+                  "word": "orb weaver",
+                  "ipa": "ˈɔːrbˌwiːvər"
+                }
+              ]
+            },
+            {
+              "word": "scorpion",
+              "ipa": "ˈskɔɹpiən"
+            }
+          ]
+        },
+        {
+          "word": "crustacean",
+          "ipa": "kɹəˈsteɪʃən",
+          "tags": [
+            "bug"
+          ],
+          "children": [
+            {
+              "word": "carapace",
+              "unsearchable": true,
+              "ipa": "kæɹəpeɪs"
+            },
+            {
+              "word": "claw",
+              "unsearchable": true,
+              "ipa": "ˈkɫɔ"
+            },
+            {
+              "word": "hermit crab",
+              "ipa": "ˈhɜːrmɪtkræb"
+            },
+            {
+              "word": "copepod",
+              "ipa": "koʊpɪpɒd"
+            },
+            {
+              "word": "crab",
+              "ipa": "ˈkɹæb"
+            },
+            {
+              "word": "lobster",
+              "ipa": "ˈɫɑbstɝ"
+            },
+            {
+              "word": "krill",
+              "ipa": "ˈkɹɪɫ"
+            },
+            {
+              "word": "crawfish",
+              "ipa": "ˈkɹɔˌfɪʃ"
+            },
+            {
+              "word": "crayfish",
+              "ipa": "ˈkɹeɪfɪʃ"
+            },
+            {
+              "word": "shrimp",
+              "ipa": "ˈʃɹɪmp"
+            },
+            {
+              "word": "kabutogani",
+              "ipa": "ˌkɑːbuːtoʊˈɡɑːni"
+            },
+            {
+              "word": "isopod",
+              "ipa": "aɪsəpɒd",
+              "children": [
+                {
+                  "word": "rolly-polly",
+                  "unsearchable": true,
+                  "ipa": "ˌroʊliˈpoʊli"
+                },
+                {
+                  "word": "woodlouse",
+                  "ipa": "wʊdlaʊs"
+                }
+              ]
+            },
+            {
+              "word": "sandhopper",
+              "ipa": "ˈsændˌhɑː.pər"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "word": "VERTEBRATE",
+      "silent": true,
+      "unsearchable": true,
+      "children": [
+        {
+          "word": "fish",
+          "ipa": "ˈfɪʃ",
+          "children": [
+            {
+              "word": "eel",
+              "ipa": "ˈiɫ"
+            },
+            {
+              "word": "barracuda",
+              "ipa": "ˌbɛɹəˈkudə"
+            },
+            {
+              "word": "shark",
+              "ipa": "ˈʃɑɹk"
+            },
+            {
+              "word": "gar",
+              "ipa": "ˈɡɑɹ"
+            },
+            {
+              "word": "seahorse",
+              "ipa": "sˈiːhɔːs"
+            },
+            {
+              "word": "piranha",
+              "ipa": "pɪˈɹænhə"
+            },
+            {
+              "word": "remora",
+              "ipa": "ɹimɔɹə"
+            },
+            {
+              "word": "goldfish",
+              "ipa": "ˈɡoʊɫdˌfɪʃ"
+            },
+            {
+              "word": "catfish",
+              "ipa": "ˈkætˌfɪʃ"
+            },
+            {
+              "word": "manta ray",
+              "silent": true,
+              "children": [
+                {
+                  "word": "manta",
+                  "unsearchable": true,
+                  "ipa": "ˈmæntə"
+                },
+                {
+                  "word": "ray",
+                  "unsearchable": true,
+                  "ipa": "ˈɹeɪ"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "word": "amphibian",
+          "ipa": "æmˈfɪbiən",
+          "children": [
+            {
+              "word": "frog",
+              "ipa": "ˈfɹɑɡ",
+              "children": [
+                {
+                  "word": "toad",
+                  "ipa": "ˈtoʊd"
+                },
+                {
+                  "word": "croak",
+                  "unsearchable": true,
+                  "ipa": "ˈkɹoʊk"
+                },
+                {
+                  "word": "hop",
+                  "unsearchable": true,
+                  "ipa": "ˈhɑp"
+                },
+                {
+                  "word": "sproing",
+                  "unsearchable": true,
+                  "ipa": "spɹɔɪŋ"
+                }
+              ]
+            },
+            {
+              "word": "tadpole",
+              "ipa": "ˈtædˌpoʊɫ",
+              "tags": [
+                "evo_baby"
+              ]
+            },
+            {
+              "word": "salamander",
+              "ipa": "ˌsæɫəˈmændɝ"
+            }
+          ]
+        },
+        {
+          "word": "reptile",
+          "ipa": "ˈɹɛptaɪɫ",
+          "children": [
+            {
+              "word": "FANTASY_REPTILE",
+              "silent": true,
+              "unsearchable": true,
+              "children": [
+                {
+                  "word": "dragon",
+                  "ipa": "ˈdɹæɡən",
+                  "tags": [
+                    "dragon"
+                  ],
+                  "children": [
+                    {
+                      "word": "draco",
+                      "unsearchable": true,
+                      "ipa": "ˈdɹækoʊ"
+                    },
+                    {
+                      "word": "hoard",
+                      "unsearchable": true,
+                      "ipa": "ˈhɔɹd"
+                    }
+                  ]
+                },
+                {
+                  "word": "cthulhu",
+                  "ipa": "kəˈθuːluː"
+                },
+                {
+                  "word": "devil",
+                  "ipa": "ˈdɛvəɫ",
+                  "children": [
+                    {
+                      "word": "demon",
+                      "ipa": "ˈdimən"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "ANCIENT_REPTILE",
+              "silent": true,
+              "unsearchable": true,
+              "children": [
+                {
+                  "word": "cretaceous",
+                  "unsearchable": true,
+                  "ipa": "kɹɪˈteɪʃɪs"
+                },
+                {
+                  "word": "jurassic",
+                  "unsearchable": true,
+                  "ipa": "dʒʊˈɹæsɪk"
+                },
+                {
+                  "word": "triassic",
+                  "unsearchable": true,
+                  "ipa": "ˌtɹaɪˈæˌsɪk"
+                },
+                {
+                  "word": "pterodactyl",
+                  "ipa": "tɛɹədæktl̩"
+                },
+                {
+                  "word": "pterosaur",
+                  "ipa": "tɛɹəsɔɹ"
+                },
+                {
+                  "word": "quetzalcoatlus",
+                  "ipa": "kɛtsəlkoʊætləs"
+                },
+                {
+                  "word": "nyctosaurus",
+                  "ipa": "ˌpækisefələˈsɔːrəs"
+                },
+                {
+                  "word": "sharovipteryx",
+                  "ipa": "ʃəˌrɒvɪˈtɛrɪks"
+                },
+                {
+                  "word": "elasmosaurus",
+                  "ipa": "ɪˌlæzməˈsɔːrəs"
+                },
+                {
+                  "word": "mosasaurus",
+                  "ipa": "ˌmoʊsəˈsɔːrəs"
+                },
+                {
+                  "word": "archelon",
+                  "ipa": "ˈɑːrkɪˌlɒn"
+                },
+                {
+                  "word": "dimetrodon",
+                  "ipa": "daɪmɛtɹədɒn"
+                },
+                {
+                  "word": "dinosaur",
+                  "ipa": "ˈdaɪnəˌsɔɹ",
+                  "children": [
+                    {
+                      "word": "ankylosaurus",
+                      "ipa": "æŋkəloʊsɔːɹəs"
+                    },
+                    {
+                      "word": "archaeopteryx",
+                      "ipa": "ˈɑːkiːˌɒptəɹˌɪks"
+                    },
+                    {
+                      "word": "brontosaurus",
+                      "ipa": "ˌbɹɔnəˈsɔɹəs"
+                    },
+                    {
+                      "word": "compsognathus",
+                      "ipa": "kɒmpˈsɒɡnəθəs"
+                    },
+                    {
+                      "word": "dilophosaurus",
+                      "ipa": "dɪˌɫɑfəˈsɔɹəs"
+                    },
+                    {
+                      "word": "kulindadromeus",
+                      "ipa": "kuːˌlɪndəˈdroʊmiəs"
+                    },
+                    {
+                      "word": "pachycephalosaurus",
+                      "ipa": "ˌpækisefələˈsɔːrəs"
+                    },
+                    {
+                      "word": "sauropods",
+                      "ipa": "sˈɔːɹəpˌɒdz"
+                    },
+                    {
+                      "word": "spinosaurus",
+                      "ipa": "ˌspaɪnəˈsɔːrəs"
+                    },
+                    {
+                      "word": "stegosaurus",
+                      "ipa": "ˌstɛɡəˈsɔɹəs"
+                    },
+                    {
+                      "word": "therizinosaurus",
+                      "ipa": "ˌθɛrəˌzɪnoʊˈsɔːrəs"
+                    },
+                    {
+                      "word": "triceratops",
+                      "ipa": "ˌtɹaɪˈsɛɹəˌtɔps"
+                    },
+                    {
+                      "word": "triceratopsini",
+                      "ipa": "traɪˈsɛrətɑːpsɪnɪ"
+                    },
+                    {
+                      "word": "troodon",
+                      "ipa": "ˈtroʊ.ədɒn"
+                    },
+                    {
+                      "word": "tyrannosaurus",
+                      "ipa": "tɪɹænəˈsɔɹəs"
+                    },
+                    {
+                      "word": "velociraptor",
+                      "ipa": "vəˈɫɔsəˌɹæptɝ",
+                      "children": [
+                        {
+                          "word": "raptor",
+                          "unsearchable": true,
+                          "ipa": "ˈɹæptɝ"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "snake",
+              "ipa": "ˈsneɪk",
+              "children": [
+                {
+                  "word": "shed",
+                  "unsearchable": true,
+                  "ipa": "ˈʃɛd"
+                },
+                {
+                  "word": "viper",
+                  "ipa": "ˈvaɪpɝ"
+                },
+                {
+                  "word": "rattlesnake",
+                  "ipa": "ˈɹætəɫsˌneɪk"
+                },
+                {
+                  "word": "serpent",
+                  "ipa": "ˈsɝpənt"
+                },
+                {
+                  "word": "cobra",
+                  "ipa": "ˈkoʊbɹə"
+                },
+                {
+                  "word": "anaconda",
+                  "ipa": "ˌænəˈkɑndə"
+                },
+                {
+                  "word": "python",
+                  "ipa": "ˈpaɪθɑn"
+                }
+              ]
+            },
+            {
+              "word": "turtle",
+              "ipa": "ˈtɝtəɫ",
+              "children": [
+                {
+                  "word": "tortoise",
+                  "ipa": "ˈtɔɹtəs"
+                }
+              ]
+            },
+            {
+              "word": "lizard",
+              "ipa": "ˈɫɪzɝd",
+              "children": [
+                {
+                  "word": "chameleon",
+                  "ipa": "kəˈmiɫiən"
+                },
+                {
+                  "word": "gecko",
+                  "ipa": "ˈɡɛkoʊ"
+                }
+              ]
+            },
+            {
+              "word": "crocodile",
+              "ipa": "ˈkɹɑkəˌdaɪɫ",
+              "children": [
+                {
+                  "word": "alligator",
+                  "ipa": "ˈæɫəˌɡeɪtɝ"
+                },
+                {
+                  "word": "caiman",
+                  "ipa": "keɪmən"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "word": "bird",
+          "ipa": "ˈbɝd",
+          "children": [
+            {
+              "word": "FANTASY_BIRD",
+              "silent": true,
+              "unsearchable": true,
+              "children": [
+                {
+                  "word": "phoenix",
+                  "ipa": "ˈfinɪks"
+                },
+                {
+                  "word": "roc",
+                  "ipa": "ˈɹɑk"
+                },
+                {
+                  "word": "quetzalcoatl",
+                  "ipa": "ˈkɛtsɑɫˌkwɔtɫ"
+                }
+              ]
+            },
+            {
+              "word": "chickadee",
+              "ipa": "t͡ʃɪkədi"
+            },
+            {
+              "word": "cormorant",
+              "ipa": "ˈkɔɹmɝənt"
+            },
+            {
+              "word": "dove",
+              "ipa": "ˈdəv"
+            },
+            {
+              "word": "goose",
+              "ipa": "ˈɡus"
+            },
+            {
+              "word": "gull",
+              "ipa": "ˈɡəɫ"
+            },
+            {
+              "word": "hoatzin",
+              "ipa": "wɑːtsiːn"
+            },
+            {
+              "word": "jay",
+              "ipa": "ˈdʒeɪ"
+            },
+            {
+              "word": "parrot",
+              "ipa": "ˈpɛɹət"
+            },
+            {
+              "word": "pelican",
+              "ipa": "ˈpɛɫəkən"
+            },
+            {
+              "word": "penguin",
+              "ipa": "ˈpɛŋɡwən"
+            },
+            {
+              "word": "pheasant",
+              "ipa": "ˈfɛzənt"
+            },
+            {
+              "word": "pidgeon",
+              "ipa": "ˈpɪddʒɪn"
+            },
+            {
+              "word": "quail",
+              "ipa": "ˈkweɪɫ"
+            },
+            {
+              "word": "quetzal",
+              "ipa": "kɛtsɑl"
+            },
+            {
+              "word": "rook",
+              "ipa": "ˈɹʊk"
+            },
+            {
+              "word": "sparrow",
+              "ipa": "ˈspɛɹoʊ"
+            },
+            {
+              "word": "starling",
+              "ipa": "ˈstɑɹɫɪŋ"
+            },
+            {
+              "word": "swallow",
+              "ipa": "ˈswɑɫoʊ"
+            },
+            {
+              "word": "swan",
+              "ipa": "ˈswɑn"
+            },
+            {
+              "word": "toucan",
+              "ipa": "tuːkæn"
+            },
+            {
+              "word": "vulture",
+              "ipa": "ˈvəɫtʃɝ"
+            },
+            {
+              "word": "corvid",
+              "ipa": "kɔɹvɪd",
+              "children": [
+                {
+                  "word": "raven",
+                  "ipa": "ˈɹeɪvən"
+                },
+                {
+                  "word": "crow",
+                  "ipa": "ˈkɹoʊ"
+                }
+              ]
+            },
+            {
+              "word": "owl",
+              "ipa": "ˈaʊɫ",
+              "children": [
+                {
+                  "word": "eye",
+                  "unsearchable": true,
+                  "ipa": "ˈaɪ"
+                },
+                {
+                  "word": "hoot",
+                  "unsearchable": true,
+                  "ipa": "ˈhut"
+                },
+                {
+                  "word": "noctis",
+                  "unsearchable": true,
+                  "ipa": "ˈnɒktɪs"
+                },
+                {
+                  "word": "nocturnal",
+                  "unsearchable": true,
+                  "ipa": "nɑkˈtɝnəɫ"
+                },
+                {
+                  "word": "otis",
+                  "unsearchable": true,
+                  "ipa": "ˈoʊtɪs"
+                },
+                {
+                  "word": "owlet",
+                  "ipa": "aʊlət",
+                  "tags": [
+                    "evo_baby"
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "chicken",
+              "ipa": "ˈtʃɪkən",
+              "children": [
+                {
+                  "word": "chick",
+                  "ipa": "ˈtʃɪk"
+                },
+                {
+                  "word": "cluck",
+                  "unsearchable": true,
+                  "ipa": "ˈkɫək"
+                },
+                {
+                  "word": "rooster",
+                  "unsearchable": true,
+                  "ipa": "ˈɹustɝ"
+                }
+              ]
+            },
+            {
+              "word": "duck",
+              "ipa": "ˈdək",
+              "children": [
+                {
+                  "word": "duckling",
+                  "ipa": "ˈdəkɫɪŋ"
+                }
+              ]
+            },
+            {
+              "word": "eagle",
+              "ipa": "ˈiɡəɫ",
+              "children": [
+                {
+                  "word": "sharp",
+                  "unsearchable": true,
+                  "ipa": "ˈʃɑɹp"
+                },
+                {
+                  "word": "eye",
+                  "unsearchable": true,
+                  "ipa": "ˈaɪ"
+                },
+                {
+                  "word": "eaglet",
+                  "ipa": "ˈiːɡlət",
+                  "tags": [
+                    "evo_baby"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "word": "mammal",
+          "silent": true,
+          "children": [
+            {
+              "word": "bat",
+              "ipa": "ˈbæt",
+              "tags": [
+                "flying"
+              ]
+            },
+            {
+              "word": "beaver",
+              "ipa": "ˈbivɝ"
+            },
+            {
+              "word": "camel",
+              "ipa": "ˈkæməɫ"
+            },
+            {
+              "word": "giraffe",
+              "ipa": "dʒɝˈæf"
+            },
+            {
+              "word": "hedgehog",
+              "ipa": "ˈhɛdʒˌhɑɡ"
+            },
+            {
+              "word": "hyena",
+              "ipa": "haɪˈinə"
+            },
+            {
+              "word": "koala",
+              "ipa": "koʊˈɑɫə"
+            },
+            {
+              "word": "mongoose",
+              "ipa": "ˈmɑŋɡus"
+            },
+            {
+              "word": "moose",
+              "ipa": "ˈmus"
+            },
+            {
+              "word": "porcupine",
+              "ipa": "ˈpɔɹkjəˌpaɪn"
+            },
+            {
+              "word": "racoon",
+              "ipa": "ɹækˈuːn"
+            },
+            {
+              "word": "skunk",
+              "ipa": "ˈskəŋk"
+            },
+            {
+              "word": "canine",
+              "ipa": "ˈkeɪˌnaɪn",
+              "children": [
+                {
+                  "word": "fox",
+                  "ipa": "ˈfɑks",
+                  "children": [
+                    {
+                      "word": "vulpine",
+                      "unsearchable": true,
+                      "ipa": "vʌlpaɪn"
+                    },
+                    {
+                      "word": "fennec",
+                      "unsearchable": true,
+                      "ipa": "fɛnɪk"
+                    }
+                  ]
+                },
+                {
+                  "word": "dog",
+                  "ipa": "ˈdɔɡ",
+                  "children": [
+                    {
+                      "word": "bark",
+                      "unsearchable": true,
+                      "ipa": "ˈbɑɹk"
+                    },
+                    {
+                      "word": "herd",
+                      "unsearchable": true,
+                      "ipa": "ˈhɝd"
+                    },
+                    {
+                      "word": "hunt",
+                      "unsearchable": true,
+                      "ipa": "ˈhənt"
+                    },
+                    {
+                      "word": "lycan",
+                      "unsearchable": true,
+                      "ipa": "ˈɫaɪkən"
+                    },
+                    {
+                      "word": "ruff",
+                      "unsearchable": true,
+                      "ipa": "ˈɹəf"
+                    },
+                    {
+                      "word": "scamper",
+                      "unsearchable": true,
+                      "ipa": "ˈskæmpɝ"
+                    },
+                    {
+                      "word": "wag",
+                      "unsearchable": true,
+                      "ipa": "ˈwæɡ"
+                    },
+                    {
+                      "word": "whimper",
+                      "unsearchable": true,
+                      "ipa": "ˈhwɪmpɝ"
+                    },
+                    {
+                      "word": "yap",
+                      "unsearchable": true,
+                      "ipa": "ˈjæp"
+                    },
+                    {
+                      "word": "pooch",
+                      "ipa": "ˈputʃ"
+                    },
+                    {
+                      "word": "pup",
+                      "ipa": "ˈpəp",
+                      "tags": [
+                        "evo_baby"
+                      ]
+                    },
+                    {
+                      "word": "bulldog",
+                      "ipa": "ˈbʊɫˌdɔɡ"
+                    },
+                    {
+                      "word": "beagle",
+                      "ipa": "ˈbiɡəɫ"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "cat",
+              "ipa": "ˈkæt",
+              "children": [
+                {
+                  "word": "feline",
+                  "unsearchable": true,
+                  "ipa": "ˈfiˌɫaɪn"
+                },
+                {
+                  "word": "purr",
+                  "unsearchable": true,
+                  "ipa": "ˈpɝ"
+                },
+                {
+                  "word": "roar",
+                  "unsearchable": true,
+                  "ipa": "ˈɹɔɹ"
+                },
+                {
+                  "word": "meow",
+                  "unsearchable": true,
+                  "ipa": "miˈaʊ"
+                },
+                {
+                  "word": "mew",
+                  "unsearchable": true,
+                  "ipa": "ˈmju"
+                },
+                {
+                  "word": "kitten",
+                  "ipa": "ˈkɪtən"
+                },
+                {
+                  "word": "kitty",
+                  "ipa": "ˈkɪti"
+                },
+                {
+                  "word": "lion",
+                  "ipa": "ˈɫaɪən",
+                  "children": [
+                    {
+                      "word": "leo",
+                      "unsearchable": true,
+                      "ipa": "ˈɫioʊ"
+                    },
+                    {
+                      "word": "nemean",
+                      "unsearchable": true,
+                      "ipa": "ˈnimiən"
+                    }
+                  ]
+                },
+                {
+                  "word": "panther",
+                  "ipa": "ˈpænθɝ"
+                },
+                {
+                  "word": "cougar",
+                  "ipa": "ˈkuɡɝ"
+                },
+                {
+                  "word": "leopard",
+                  "ipa": "ˈɫɛpɝd"
+                },
+                {
+                  "word": "siamese",
+                  "ipa": "ˌsaɪəˈmiz"
+                },
+                {
+                  "word": "lynx",
+                  "ipa": "ˈɫɪŋks"
+                },
+                {
+                  "word": "tiger",
+                  "ipa": "ˈtaɪɡɝ",
+                  "children": [
+                    {
+                      "word": "tyger",
+                      "unsearchable": true,
+                      "ipa": "ˈtaɪɡɝ"
+                    }
+                  ]
+                },
+                {
+                  "word": "bobcat",
+                  "ipa": "ˈbɑbˌkæt"
+                },
+                {
+                  "word": "jaguar",
+                  "ipa": "ˈdʒæˌɡwɑɹ"
+                },
+                {
+                  "word": "cheetah",
+                  "ipa": "ˈtʃitə"
+                }
+              ]
+            },
+            {
+              "word": "rodent",
+              "ipa": "ˈɹoʊdənt",
+              "children": [
+                {
+                  "word": "rat",
+                  "ipa": "ˈɹæt"
+                },
+                {
+                  "word": "shrew",
+                  "ipa": "ʃɹuː"
+                }
+              ]
+            },
+            {
+              "word": "elephant",
+              "ipa": "ˈɛɫəfənt",
+              "children": [
+                {
+                  "word": "tusk",
+                  "unsearchable": true,
+                  "ipa": "ˈtəsk"
+                },
+                {
+                  "word": "trunk",
+                  "unsearchable": true,
+                  "ipa": "ˈtɹəŋk"
+                },
+                {
+                  "word": "mammoth",
+                  "ipa": "ˈmæməθ"
+                }
+              ]
+            },
+            {
+              "word": "sheep",
+              "ipa": "ˈʃip",
+              "children": [
+                {
+                  "word": "wool",
+                  "unsearchable": true,
+                  "ipa": "ˈwʊɫ"
+                },
+                {
+                  "word": "wooly",
+                  "unsearchable": true,
+                  "ipa": "ˈwʊɫi"
+                },
+                {
+                  "word": "fluffy",
+                  "unsearchable": true,
+                  "ipa": "ˈfɫəfi"
+                },
+                {
+                  "word": "ram",
+                  "ipa": "ˈɹæm"
+                },
+                {
+                  "word": "ewe",
+                  "ipa": "ˈju"
+                },
+                {
+                  "word": "lamb",
+                  "ipa": "ˈɫæm",
+                  "tags": [
+                    "evo_baby"
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "pig",
+              "ipa": "ˈpɪɡ",
+              "children": [
+                {
+                  "word": "swine",
+                  "unsearchable": true,
+                  "ipa": "ˈswaɪn"
+                },
+                {
+                  "word": "hog",
+                  "unsearchable": true,
+                  "ipa": "ˈhɑɡ"
+                },
+                {
+                  "word": "boar",
+                  "unsearchable": true,
+                  "ipa": "ˈbɔɹ"
+                },
+                {
+                  "word": "berkshire",
+                  "unsearchable": true,
+                  "ipa": "ˈbɝkˌʃaɪɹ"
+                },
+                {
+                  "word": "duroc",
+                  "unsearchable": true,
+                  "ipa": "ˈdʊərɒk"
+                }
+              ]
+            },
+            {
+              "word": "cow",
+              "ipa": "ˈkaʊ",
+              "children": [
+                {
+                  "word": "milk",
+                  "unsearchable": true,
+                  "ipa": "ˈmɪɫk"
+                },
+                {
+                  "word": "bovine",
+                  "unsearchable": true,
+                  "ipa": "ˈboʊˌvaɪn"
+                },
+                {
+                  "word": "moo",
+                  "unsearchable": true,
+                  "ipa": "ˈmu"
+                },
+                {
+                  "word": "heifer",
+                  "unsearchable": true,
+                  "ipa": "ˈhaɪfɝ"
+                },
+                {
+                  "word": "angus",
+                  "unsearchable": true,
+                  "ipa": "ˈæŋɡəs"
+                },
+                {
+                  "word": "charolais",
+                  "unsearchable": true,
+                  "ipa": "ˌʃærəˈleɪ"
+                },
+                {
+                  "word": "hereford",
+                  "unsearchable": true,
+                  "ipa": "ˈhɛɹəfɝd"
+                },
+                {
+                  "word": "simmental",
+                  "unsearchable": true,
+                  "ipa": "ˈzɪmənˌtɑːl"
+                },
+                {
+                  "word": "longhorn",
+                  "unsearchable": true,
+                  "ipa": "ˈɫɔŋˌhɔɹn"
+                },
+                {
+                  "word": "gelbvieh",
+                  "unsearchable": true,
+                  "ipa": "ɡɛlbfiː"
+                },
+                {
+                  "word": "holstein",
+                  "unsearchable": true,
+                  "ipa": "ˈhoʊɫˌstin"
+                },
+                {
+                  "word": "limousin",
+                  "unsearchable": true,
+                  "ipa": "lɪməziːn"
+                },
+                {
+                  "word": "ox",
+                  "ipa": "ˈɑks"
+                },
+                {
+                  "word": "wildebeest",
+                  "ipa": "wɪldəbist"
+                },
+                {
+                  "word": "buffalo",
+                  "ipa": "ˈbəfəˌɫoʊ"
+                },
+                {
+                  "word": "bison",
+                  "ipa": "ˈbaɪsən"
+                },
+                {
+                  "word": "bull",
+                  "ipa": "ˈbʊɫ"
+                }
+              ]
+            },
+            {
+              "word": "HORSE_LIKE",
+              "silent": true,
+              "unsearchable": true,
+              "children": [
+                {
+                  "word": "bray",
+                  "unsearchable": true,
+                  "ipa": "ˈbɹeɪ"
+                },
+                {
+                  "word": "whinny",
+                  "unsearchable": true,
+                  "ipa": "wɪni"
+                },
+                {
+                  "word": "gallop",
+                  "unsearchable": true,
+                  "ipa": "ˈɡæɫəp"
+                },
+                {
+                  "word": "trot",
+                  "unsearchable": true,
+                  "ipa": "ˈtɹɑt"
+                },
+                {
+                  "word": "canter",
+                  "unsearchable": true,
+                  "ipa": "ˈkæntɝ"
+                },
+                {
+                  "word": "equine",
+                  "unsearchable": true,
+                  "ipa": "ˈiˌkwaɪn"
+                },
+                {
+                  "word": "donkey",
+                  "ipa": "ˈdɑŋki"
+                },
+                {
+                  "word": "mule",
+                  "ipa": "ˈmjuɫ"
+                },
+                {
+                  "word": "pony",
+                  "ipa": "ˈpoʊˌni"
+                },
+                {
+                  "word": "horse",
+                  "ipa": "ˈhɔɹs",
+                  "children": [
+                    {
+                      "word": "trojan",
+                      "unsearchable": true,
+                      "ipa": "ˈtɹoʊdʒən"
+                    },
+                    {
+                      "word": "appaloosa",
+                      "unsearchable": true,
+                      "ipa": "æpəlusə"
+                    },
+                    {
+                      "word": "percheron",
+                      "unsearchable": true,
+                      "ipa": "ˈpɜːrtʃərɒn"
+                    },
+                    {
+                      "word": "shetland",
+                      "unsearchable": true,
+                      "ipa": "ˈʃɛtɫənd"
+                    },
+                    {
+                      "word": "clydesdale",
+                      "unsearchable": true,
+                      "ipa": "ˈkɫaɪdzˌdeɪɫ"
+                    }
+                  ]
+                },
+                {
+                  "word": "zebra",
+                  "ipa": "ˈzibɹə"
+                }
+              ]
+            },
+            {
+              "word": "MONKEY_LIKE",
+              "silent": true,
+              "unsearchable": true,
+              "children": [
+                {
+                  "word": "monkey",
+                  "ipa": "ˈməŋki"
+                },
+                {
+                  "word": "sloth",
+                  "ipa": "ˈsɫoʊθ"
+                },
+                {
+                  "word": "baboon",
+                  "ipa": "bəˈbun"
+                },
+                {
+                  "word": "tarsier",
+                  "ipa": "tɑɹsiɚ"
+                },
+                {
+                  "word": "lemur",
+                  "ipa": "ˈɫimɝ"
+                },
+                {
+                  "word": "loris",
+                  "ipa": "ˈɫɔɹɪs"
+                },
+                {
+                  "word": "simian",
+                  "unsearchable": true,
+                  "ipa": "ˈsɪmiən"
+                },
+                {
+                  "word": "ape",
+                  "ipa": "ˈeɪp",
+                  "children": [
+                    {
+                      "word": "-pithicus",
+                      "unsearchable": true,
+                      "ipa": "ˈpɪθɪkəs"
+                    },
+                    {
+                      "word": "gorilla",
+                      "ipa": "ɡɝˈɪɫə"
+                    },
+                    {
+                      "word": "orangutan",
+                      "ipa": "ɔˈɹæŋətæn"
+                    },
+                    {
+                      "word": "chimpanzee",
+                      "ipa": "tʃɪmˈpænzi"
+                    },
+                    {
+                      "word": "gibbon",
+                      "ipa": "ˈɡɪbən"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "bear",
+              "ipa": "ˈbɛɹ",
+              "children": [
+                {
+                  "word": "ursa",
+                  "unsearchable": true,
+                  "ipa": "ˈɝsə"
+                },
+                {
+                  "word": "cub",
+                  "ipa": "ˈkəb",
+                  "children": [
+                    {
+                      "word": "teddy",
+                      "unsearchable": true,
+                      "ipa": "ˈtɛdi"
+                    }
+                  ]
+                },
+                {
+                  "word": "panda",
+                  "ipa": "ˈpændə",
+                  "children": [
+                    {
+                      "word": "spot",
+                      "unsearchable": true,
+                      "ipa": "ˈspɑt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "llama",
+              "ipa": "ˈɫɑmə",
+              "children": [
+                {
+                  "word": "alpaca",
+                  "ipa": "æɫˈpækə"
+                }
+              ]
+            },
+            {
+              "word": "deer",
+              "ipa": "ˈdɪɹ",
+              "children": [
+                {
+                  "word": "buck",
+                  "ipa": "ˈbək"
+                },
+                {
+                  "word": "doe",
+                  "ipa": "ˈdoʊ"
+                },
+                {
+                  "word": "fawn",
+                  "ipa": "ˈfɔn",
+                  "tags": [
+                    "evo_baby"
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "goat",
+              "ipa": "ˈɡoʊt",
+              "children": [
+                {
+                  "word": "kid",
+                  "unsearchable": true,
+                  "ipa": "ˈkɪd",
+                  "tags": [
+                    "evo_baby"
+                  ]
+                }
+              ]
+            },
+            {
+              "word": "hippopotamus",
+              "ipa": "ˌhɪpəˈpɑtəməs",
+              "children": [
+                {
+                  "word": "hippo",
+                  "unsearchable": true,
+                  "ipa": "ˈhɪpoʊ"
+                }
+              ]
+            },
+            {
+              "word": "squirrel",
+              "ipa": "ˈskwɝəɫ",
+              "children": [
+                {
+                  "word": "chipmunk",
+                  "ipa": "ˈtʃɪpməŋk"
+                }
+              ]
+            },
+            {
+              "word": "rabbit",
+              "ipa": "ˈɹæbət",
+              "children": [
+                {
+                  "word": "bunny",
+                  "ipa": "ˈbəni"
+                }
+              ]
+            },
+            {
+              "word": "WEASEL_LIKE",
+              "silent": true,
+              "unsearchable": true,
+              "children": [
+                {
+                  "word": "weasel",
+                  "ipa": "ˈwizəɫ"
+                },
+                {
+                  "word": "ferret",
+                  "ipa": "ˈfɛɹət"
+                },
+                {
+                  "word": "mink",
+                  "ipa": "ˈmɪŋk"
+                },
+                {
+                  "word": "polecat",
+                  "ipa": "ˈpoʊɫˌkæt"
+                },
+                {
+                  "word": "otter",
+                  "ipa": "ˈɑtɝ"
+                }
+              ]
+            },
+            {
+              "word": "cetacean",
+              "ipa": "siˈteɪʃən",
+              "tags": [
+                "water"
+              ],
+              "children": [
+                {
+                  "word": "whale",
+                  "ipa": "ˈhweɪɫ",
+                  "children": [
+                    {
+                      "word": "humpback",
+                      "unsearchable": true,
+                      "ipa": "ˈhəmpˌbæk"
+                    },
+                    {
+                      "word": "port",
+                      "unsearchable": true,
+                      "ipa": "ˈpɔɹt"
+                    },
+                    {
+                      "word": "orca",
+                      "ipa": "ˈɔɹkə"
+                    }
+                  ]
+                },
+                {
+                  "word": "dolphin",
+                  "ipa": "ˈdɑɫfən"
+                },
+                {
+                  "word": "narwhal",
+                  "ipa": "nɑɹweɪl"
+                }
+              ]
+            },
+            {
+              "word": "SEADOGGOS",
+              "silent": true,
+              "unsearchable": true,
+              "tags": [
+                "water"
+              ],
+              "children": [
+                {
+                  "word": "walrus",
+                  "ipa": "ˈwɔɫɹəs"
+                },
+                {
+                  "word": "dugong",
+                  "ipa": "duɡɑŋ"
+                },
+                {
+                  "word": "seal",
+                  "ipa": "ˈsiɫ"
+                },
+                {
+                  "word": "sealion",
+                  "ipa": "siːlaɪən"
+                },
+                {
+                  "word": "manatee",
+                  "ipa": "ˈmænəˌti"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

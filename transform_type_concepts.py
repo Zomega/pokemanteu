@@ -1,3 +1,4 @@
+import yaml
 import os
 import glob
 import json
@@ -82,6 +83,99 @@ def convert_txt_to_json(input_dir, output_dir, ipa_map):
             print(f"  -> Missing IPA for {len(missing_words)} words: {', '.join(missing_words)}")
 
 
+def parse_label(label, ipa_dict, missing_words):
+    """Parses a single YAML string into a structured JSON object."""
+    # 1. Extract Tags and lowercase them
+    parts = label.split(':')
+    raw_word = parts[0].strip()
+    tags = [t.strip().lower() for t in parts[1:] if t.strip()]
+
+    silent = False
+    unsearchable = False
+    transparent = False
+
+    # 2. Extract Visibility Flags (_ and __)
+    if raw_word.startswith('__'):
+        unsearchable = True
+        silent = True
+        raw_word = raw_word[2:]
+    elif raw_word.startswith('_'):
+        silent = True
+        raw_word = raw_word[1:]
+
+    # 3. Extract Modifiers ($ and ^)
+    if raw_word.startswith('$'):
+        unsearchable = True
+        raw_word = raw_word[1:]
+    elif raw_word.startswith('^'):
+        transparent = True
+        raw_word = raw_word[1:]
+
+    # 4. CONDITIONAL CASING: UPPERCASE for silent, lowercase for normal
+    base_word = raw_word.strip()
+    if silent and unsearchable:
+        clean_word = base_word.upper()
+    else:
+        clean_word = base_word.lower()
+
+    # 5. Lookup IPA (Skip if silent!)
+    ipa = None
+    if not silent:
+        ipa = ipa_dict.get(clean_word)
+        if not ipa:
+            missing_words.append(clean_word)
+
+    # 6. Build the clean JSON node
+    node = {
+        "word": clean_word,
+    }
+
+    # Only append these if they are relevant to keep the JSON incredibly clean
+    if silent:
+        node["silent"] = True
+    if unsearchable:
+        node["unsearchable"] = True
+    if transparent:
+        node["transparent"] = True
+    if not silent:
+        node["ipa"] = ipa
+    if tags:
+        node["tags"] = tags
+
+    return node
+
+
+def process_node(node, ipa_dict, missing_words):
+    """Recursively walks the parsed YAML data."""
+    # Leaf node (just a string like "- Egg")
+    if isinstance(node, str):
+        return parse_label(node, ipa_dict, missing_words)
+
+    # Branch node (a dictionary with a parent key and child list)
+    elif isinstance(node, dict):
+        results = []
+        for key, value in node.items():
+            parsed_node = parse_label(key, ipa_dict, missing_words)
+
+            children = []
+            if isinstance(value, list):
+                for child in value:
+                    children.append(process_node(
+                        child, ipa_dict, missing_words))
+            elif value is not None:
+                children.append(process_node(value, ipa_dict, missing_words))
+
+            parsed_node["children"] = children
+            results.append(parsed_node)
+
+        # Unpack if it's a single-key dictionary (which YAML list-dicts usually are)
+        return results[0] if len(results) == 1 else results
+
+    # List of nodes
+    elif isinstance(node, list):
+        return [process_node(child, ipa_dict, missing_words) for child in node]
+
+
 # --- EXECUTION ---
 if __name__ == "__main__":
     # 1. Define your paths here
@@ -103,12 +197,34 @@ if __name__ == "__main__":
     INPUT_DIRECTORY = "pokemon_type_concepts"
     OUTPUT_DIRECTORY = "pokemon_type_concepts"
 
+    YAML_FILE = "pokemon_type_concepts/creatures.yaml"
+    JSON_OUTPUT = "pokemon_type_concepts/creatures.json"
+
     # 2. Run the pipeline
-    try:
-        # Pass the list of files instead of a single string
-        combined_ipa_dict = load_ipa_dictionaries(TSV_FILES)
-        convert_txt_to_json(
-            INPUT_DIRECTORY, OUTPUT_DIRECTORY, combined_ipa_dict)
-        print("\nAll files processed successfully!")
-    except Exception as e:
-        print(f"Error: {e}")
+    print("Loading dictionaries...")
+    ipa_dict = load_ipa_dictionaries(TSV_FILES)
+    convert_txt_to_json(
+        INPUT_DIRECTORY, OUTPUT_DIRECTORY, ipa_dict)
+    print("\nAll type files processed successfully!")
+
+    print(f"\nParsing {YAML_FILE}...")
+    with open(YAML_FILE, 'r', encoding='utf-8') as f:
+        # safe_load converts the YAML string into nested Python lists/dicts
+        yaml_data = yaml.safe_load(f)
+
+    missing_words = []
+
+    # Process the tree
+    json_tree = process_node(yaml_data, ipa_dict, missing_words)
+
+    # Export
+    with open(JSON_OUTPUT, 'w', encoding='utf-8') as f:
+        json.dump(json_tree, f, ensure_ascii=False, indent=2)
+
+    print(f"Successfully saved cleanly formatted tree to {JSON_OUTPUT}")
+
+    # Deduplicate and print missing words for you to add to a custom TSV
+    if missing_words:
+        unique_missing = sorted(list(set(missing_words)))
+        print(f"\nWARNING: Could not find IPAs for {len(unique_missing)} words:")
+        print("\n".join(unique_missing))

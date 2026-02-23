@@ -36,7 +36,7 @@ __ROOT:
     - Bulb
     - Stump
     - Sprout
-    - Bonsi
+    - Bonsai
     - Flower
     - Burr
     - Pod
@@ -44,11 +44,11 @@ __ROOT:
     - Cactus
     - Chesnut
     - Pinecone
-    - Kernal
+    - Kernel
     - Kelp:WATER
     - Coral:ROCK
     - Mushroom:
-      - Portabello
+      - Portobello
       - Shiitake
       - Crimini
       - Enoki
@@ -74,7 +74,7 @@ __ROOT:
       - Worm
       - Slug
       - Snail
-      - Escargo
+      - Escargot
       - Nudibranch:
         - $Slug
     - Squid
@@ -143,7 +143,7 @@ __ROOT:
       - Shark
       - Gar
       - Seahorse
-      - Pirahana
+      - Piranha
       - Remora
       - Goldfish
       - Catfish
@@ -168,7 +168,7 @@ __ROOT:
           - Demon
       - __ANCIENT_REPTILE:
         - $Cretaceous
-        - $Jurrasic
+        - $Jurassic
         - $Triassic
         - Pterodactyl
         - Pterosaur
@@ -218,7 +218,7 @@ __ROOT:
         - Phoenix
         - Roc
         - Quetzalcoatl
-      - Chicadee
+      - Chickadee
       - Cormorant
       - Dove
       - Goose
@@ -228,7 +228,7 @@ __ROOT:
       - Parrot
       - Pelican
       - Penguin
-      - Phesant
+      - Pheasant
       - Pidgeon
       - Quail
       - Quetzal
@@ -275,7 +275,7 @@ __ROOT:
       - Canine:
         - Fox:
           - $Vulpine
-          - $Fennic
+          - $Fennec
         - Dog:
           - $Bark
           - $Herd
@@ -335,7 +335,7 @@ __ROOT:
         - $Milk
         - $Bovine
         - $Moo
-        - $Hefer
+        - $Heifer
         - $Angus
         - $Charolais
         - $Hereford
@@ -377,7 +377,7 @@ __ROOT:
         - Ape:
           - $-pithicus
           - Gorilla
-          - Orangatang
+          - Orangutan
           - Chimpanzee
           - Gibbon
       - Bear:
