@@ -2,6 +2,8 @@ import yaml
 import os
 import glob
 import json
+import torch
+import clip
 
 
 def load_ipa_dictionaries(tsv_paths):
@@ -41,51 +43,58 @@ def load_ipa_dictionaries(tsv_paths):
     return ipa_map
 
 
-def convert_txt_to_json(input_dir, output_dir, ipa_map):
-    """Iterates through .txt files and converts them to .json."""
-    os.makedirs(output_dir, exist_ok=True)
+def build_pokemon_types_tree(input_dir, ipa_map, missing_words_set):
+    """
+    Reads .txt files, parses their contents, and builds a hierarchical
+    dictionary branch to be attached to the main YAML tree.
+    """
+    types_node = {
+        "word": "POKEMON_TYPES",
+        "silent": True,
+        "unsearchable": True,
+        "children": []
+    }
 
     search_pattern = os.path.join(input_dir, '*.txt')
     txt_files = glob.glob(search_pattern)
 
     if not txt_files:
-        print(f"No .txt files found in '{input_dir}'!")
-        return
+        print(f"Warning: No .txt files found in '{input_dir}'!")
+        return types_node
 
     for filepath in txt_files:
         filename = os.path.basename(filepath)
-        out_name = os.path.splitext(filename)[0] + '.json'
-        out_path = os.path.join(output_dir, out_name)
+        # e.g., 'water' -> 'WATER'
+        type_name = os.path.splitext(filename)[0].upper()
 
-        word_data = []
-        missing_words = []
+        # Create the specific type node (e.g., __WATER)
+        type_node = {
+            "word": type_name,
+            "silent": True,
+            "unsearchable": True,
+            "pokemon_type": True,  # Added specific tag
+            "children": []
+        }
 
         with open(filepath, 'r', encoding='utf-8') as f:
             for line in f:
-                word = line.strip().lower()
+                word = line.strip()
                 if not word:
                     continue
 
-                ipa = ipa_map.get(word)
-                if not ipa:
-                    missing_words.append(word)
+                # Pass each word through the exact same parser used by the YAML
+                child_node = parse_label(word, ipa_map, missing_words_set)
+                type_node["children"].append(child_node)
 
-                word_data.append({
-                    "word": word,
-                    "ipa": ipa
-                })
+        if type_node["children"]:
+            types_node["children"].append(type_node)
+            print(f"Loaded {len(type_node['children'])} concepts for type: {type_name}")
 
-        with open(out_path, 'w', encoding='utf-8') as out_f:
-            json.dump(word_data, out_f, ensure_ascii=False, indent=2)
-
-        print(f"Saved: {out_path} ({len(word_data)} words)")
-        if missing_words:
-            print(f"  -> Missing IPA for {len(missing_words)} words: {', '.join(missing_words)}")
+    return types_node
 
 
-def parse_label(label, ipa_dict, missing_words):
+def parse_label(label, ipa_dict, missing_words_set):
     """Parses a single YAML string into a structured JSON object."""
-    # 1. Extract Tags and lowercase them
     parts = label.split(':')
     raw_word = parts[0].strip()
     tags = [t.strip().lower() for t in parts[1:] if t.strip()]
@@ -94,7 +103,7 @@ def parse_label(label, ipa_dict, missing_words):
     unsearchable = False
     transparent = False
 
-    # 2. Extract Visibility Flags (_ and __)
+    # Extract Visibility Flags
     if raw_word.startswith('__'):
         unsearchable = True
         silent = True
@@ -103,7 +112,7 @@ def parse_label(label, ipa_dict, missing_words):
         silent = True
         raw_word = raw_word[1:]
 
-    # 3. Extract Modifiers ($ and ^)
+    # Extract Modifiers
     if raw_word.startswith('$'):
         unsearchable = True
         raw_word = raw_word[1:]
@@ -111,26 +120,26 @@ def parse_label(label, ipa_dict, missing_words):
         transparent = True
         raw_word = raw_word[1:]
 
-    # 4. CONDITIONAL CASING: UPPERCASE for silent, lowercase for normal
+    # Conditional Casing
     base_word = raw_word.strip()
     if silent and unsearchable:
         clean_word = base_word.upper()
     else:
         clean_word = base_word.lower()
 
-    # 5. Lookup IPA (Skip if silent!)
+    # Lookup IPA
     ipa = None
     if not silent:
         ipa = ipa_dict.get(clean_word)
         if not ipa:
-            missing_words.append(clean_word)
+            # Using .add() because it's a set now
+            missing_words_set.add(clean_word)
 
-    # 6. Build the clean JSON node
+    # Build Node
     node = {
         "word": clean_word,
     }
 
-    # Only append these if they are relevant to keep the JSON incredibly clean
     if silent:
         node["silent"] = True
     if unsearchable:
@@ -145,41 +154,57 @@ def parse_label(label, ipa_dict, missing_words):
     return node
 
 
-def process_node(node, ipa_dict, missing_words):
+def process_node(node, ipa_dict, missing_words_set):
     """Recursively walks the parsed YAML data."""
-    # Leaf node (just a string like "- Egg")
     if isinstance(node, str):
-        return parse_label(node, ipa_dict, missing_words)
+        return parse_label(node, ipa_dict, missing_words_set)
 
-    # Branch node (a dictionary with a parent key and child list)
     elif isinstance(node, dict):
         results = []
         for key, value in node.items():
-            parsed_node = parse_label(key, ipa_dict, missing_words)
+            parsed_node = parse_label(key, ipa_dict, missing_words_set)
 
             children = []
             if isinstance(value, list):
                 for child in value:
                     children.append(process_node(
-                        child, ipa_dict, missing_words))
+                        child, ipa_dict, missing_words_set))
             elif value is not None:
-                children.append(process_node(value, ipa_dict, missing_words))
+                children.append(process_node(
+                    value, ipa_dict, missing_words_set))
 
             parsed_node["children"] = children
             results.append(parsed_node)
 
-        # Unpack if it's a single-key dictionary (which YAML list-dicts usually are)
         return results[0] if len(results) == 1 else results
 
-    # List of nodes
     elif isinstance(node, list):
-        return [process_node(child, ipa_dict, missing_words) for child in node]
+        return [process_node(child, ipa_dict, missing_words_set) for child in node]
+
+
+def add_clip_embeddings(node, model, device):
+    """
+    Recursively computes and attaches a 512-dimensional CLIP embedding
+    to any node that is searchable.
+    """
+    # Only spend compute on words that will actually be searched!
+    if node.get("word") and not node.get("unsearchable", False):
+        with torch.no_grad():
+            # Tokenize and run the model
+            text_tokens = clip.tokenize([node["word"]]).to(device)
+            embedding = model.encode_text(text_tokens)
+
+            # Convert PyTorch tensor to a standard Python list of floats for JSON
+            # .squeeze() removes the batch dimension [1, 512] -> [512]
+            node["vector"] = embedding.squeeze().cpu().tolist()
+
+    # Dig into the children
+    for child in node.get("children", []):
+        add_clip_embeddings(child, model, device)
 
 
 # --- EXECUTION ---
 if __name__ == "__main__":
-    # 1. Define your paths here
-    # Order matters! The first file gets priority for pronunciations.
     TSV_FILES = [
         "custom.tsv",
         "en_US.tsv",
@@ -195,36 +220,48 @@ if __name__ == "__main__":
     ]
 
     INPUT_DIRECTORY = "pokemon_type_concepts"
-    OUTPUT_DIRECTORY = "pokemon_type_concepts"
-
     YAML_FILE = "pokemon_type_concepts/creatures.yaml"
     JSON_OUTPUT = "pokemon_type_concepts/creatures.json"
 
-    # 2. Run the pipeline
+    # Use a SET so words are globally deduplicated
+    global_missing_words = set()
+
     print("Loading dictionaries...")
     ipa_dict = load_ipa_dictionaries(TSV_FILES)
-    convert_txt_to_json(
-        INPUT_DIRECTORY, OUTPUT_DIRECTORY, ipa_dict)
-    print("\nAll type files processed successfully!")
 
-    print(f"\nParsing {YAML_FILE}...")
+    # 1. Parse the main YAML tree
+    print(f"Parsing {YAML_FILE}...")
     with open(YAML_FILE, 'r', encoding='utf-8') as f:
-        # safe_load converts the YAML string into nested Python lists/dicts
         yaml_data = yaml.safe_load(f)
 
-    missing_words = []
+    json_tree = process_node(yaml_data, ipa_dict, global_missing_words)
 
-    # Process the tree
-    json_tree = process_node(yaml_data, ipa_dict, missing_words)
+    # 2. Parse the .txt files into a unified branch
+    print(f"\nParsing text files from {INPUT_DIRECTORY}...")
+    pokemon_types_branch = build_pokemon_types_tree(
+        INPUT_DIRECTORY, ipa_dict, global_missing_words)
 
-    # Export
+    # 3. Inject the .txt branch into the ROOT node of the YAML
+    if isinstance(json_tree, dict) and json_tree.get("word") == "ROOT":
+        json_tree.setdefault("children", []).append(pokemon_types_branch)
+
+    # 4. Compute CLIP Embeddings
+    print("\nLoading PyTorch CLIP model for text embeddings...")
+    device = "cpu"
+    clip_model, _ = clip.load("ViT-B/32", device=device)
+    clip_model.eval()
+
+    print("Computing 512-dimensional semantic vectors for searchable nodes...")
+    add_clip_embeddings(json_tree, clip_model, device)
+
+    # 5. Export everything
     with open(JSON_OUTPUT, 'w', encoding='utf-8') as f:
         json.dump(json_tree, f, ensure_ascii=False, indent=2)
 
-    print(f"Successfully saved cleanly formatted tree to {JSON_OUTPUT}")
+    print(f"\nSuccessfully saved unified tree with CLIP vectors to {JSON_OUTPUT}")
 
-    # Deduplicate and print missing words for you to add to a custom TSV
-    if missing_words:
-        unique_missing = sorted(list(set(missing_words)))
-        print(f"\nWARNING: Could not find IPAs for {len(unique_missing)} words:")
+    # 6. Print out the unified missing words
+    if global_missing_words:
+        unique_missing = sorted(list(global_missing_words))
+        print(f"\nWARNING: Could not find IPAs for {len(unique_missing)} words across all files:")
         print("\n".join(unique_missing))
