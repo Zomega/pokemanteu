@@ -1,4 +1,4 @@
-import * as tf from 'https://esm.run/@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs';
 import {
     SequenceScorer
 } from './shallow_fusion.js'; // Assuming this is where it lives

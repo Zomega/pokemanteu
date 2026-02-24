@@ -170,3 +170,139 @@ export class FuzzyMatcher {
         })[0];
     }
 }
+
+/**
+ * Symmetric Delete Spelling Correction (SymSpell) 
+ * Optimized for O(1) lookups against large dictionaries.
+ */
+export class SymSpellIndex {
+    constructor(maxDistance = 2) {
+        this.maxDistance = maxDistance;
+        this.deletes = new Map(); // Map<DeleteVariant, Set<OriginalWord>>
+        this.words = new Set();
+    }
+
+    /**
+     * Pre-calculates deletes for a word and adds them to the index.
+     */
+    indexWord(word) {
+        word = word.toLowerCase();
+        if (this.words.has(word)) return;
+        this.words.add(word);
+
+        const variants = this._getDeletes(word);
+        for (const variant of variants) {
+            if (!this.deletes.has(variant)) {
+                this.deletes.set(variant, new Set());
+            }
+            this.deletes.get(variant).add(word);
+        }
+    }
+
+    /**
+     * Recursively generates all possible string deletions within maxDistance.
+     */
+    _getDeletes(word) {
+        const queue = [word];
+        const results = new Set([word]);
+
+        for (let d = 0; d < this.maxDistance; d++) {
+            const nextQueue = [];
+            for (const item of queue) {
+                if (item.length > 1) {
+                    for (let i = 0; i < item.length; i++) {
+                        const del = item.slice(0, i) + item.slice(i + 1);
+                        if (!results.has(del)) {
+                            results.add(del);
+                            nextQueue.push(del);
+                        }
+                    }
+                }
+            }
+            queue.push(...nextQueue);
+        }
+        return results;
+    }
+
+    /**
+     * Checks if a word (or something very close to it) exists in the index.
+     * Returns an array of matches.
+     */
+    lookup(word) {
+        word = word.toLowerCase();
+        const candidates = this._getDeletes(word);
+        const matches = new Set();
+
+        for (const variant of candidates) {
+            if (this.deletes.has(variant)) {
+                this.deletes.get(variant).forEach(orig => matches.add(orig));
+            }
+        }
+        return Array.from(matches);
+    }
+}
+
+/**
+ * Bitap Algorithm (Baeza-Yates–Gonnet)
+ * Best for searching a pattern within a longer string using bitwise operations.
+ */
+export class BitapScanner {
+    /**
+     * Returns the best edit distance of 'pattern' found anywhere in 'text'.
+     * @param {string} text - The longer string to search within.
+     * @param {string} pattern - The short pattern to find.
+     * @param {number} maxDistance - Max allowed edits.
+     */
+    static search(text, pattern, maxDistance = 2) {
+        const m = pattern.length;
+        if (m === 0) return 0;
+        if (m > 31) throw new Error("Pattern too long for standard Bitap (max 31 chars)");
+
+        // 1. Precompute bitmasks for each character in the pattern
+        const charMasks = {};
+        for (let i = 0; i < m; i++) {
+            const char = pattern[i];
+            charMasks[char] = (charMasks[char] || 0) | (1 << i);
+        }
+
+        // 2. Initialize the state bitmasks for each possible edit distance (0 to k)
+        // In Bitap, 0 means match, 1 means mismatch
+        const R = new Uint32Array(maxDistance + 1);
+        for (let i = 0; i <= maxDistance; i++) {
+            R[i] = ~1; // All bits 1, except first bit is 0
+        }
+
+        let bestDistance = m;
+
+        // 3. Scan the text
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const charMask = charMasks[char] || 0;
+
+            const oldR = new Uint32Array(R);
+
+            // Update R[0] (Exact match state)
+            R[0] |= ~charMask;
+            R[0] <<= 1;
+
+            // Update R[1..k] (Fuzzy match states)
+            for (let k = 1; k <= maxDistance; k++) {
+                const substitution = (oldR[k - 1] | (~charMask)) << 1;
+                const insertion = oldR[k - 1] << 1;
+                const deletion = (R[k - 1] | (~charMask)) << 1;
+
+                R[k] = (oldR[k] | (~charMask)) << 1;
+                R[k] &= (substitution & insertion & deletion);
+            }
+
+            // Check if any state hit a match (the m-th bit is 0)
+            for (let k = 0; k <= maxDistance; k++) {
+                if (!(R[k] & (1 << m))) {
+                    bestDistance = Math.min(bestDistance, k);
+                }
+            }
+        }
+
+        return bestDistance;
+    }
+}

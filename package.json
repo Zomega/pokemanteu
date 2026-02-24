@@ -1,10 +1,11 @@
 {
-  "name": "hooked_on_phonics",
+  "name": "pokemanteu",
   "version": "1.0.0",
-  "description": "",
+  "description": "I've heard it said that computer science is the art of building reliable systems out of unreliable parts. This project is me putting that maxim into practice. https://ieeexplore.ieee.org/abstract/document/1641372",
   "main": "inference.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +15,16 @@
     "@tensorflow/tfjs": "^4.22.0",
     "@tensorflow/tfjs-backend-wasm": "^4.22.0",
     "@tensorflow/tfjs-node": "^4.22.0"
-  }
+  },
+  "devDependencies": {
+    "vitest": "latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zomega/pokemanteu.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Zomega/pokemanteu/issues"
+  },
+  "homepage": "https://github.com/Zomega/pokemanteu#readme"
 }

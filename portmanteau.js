@@ -5,6 +5,7 @@
 // We'll populate these from your creatures.json during initialization
 let VALID_NONVOWEL_CLUSTERS = new Set();
 let VALID_VOWEL_CLUSTERS = new Set();
+// TODO: We should do this by loading a markov model, rather than hacking it in initLinguisticEngine.
 let BIGRAM_FREQUENCY = {};
 let BIGRAM_THRESHOLD = 1;
 
@@ -68,6 +69,7 @@ const RankingCriteria = {
 
 /**
  * Main Candidate Generator
+ * TODO: This can produce duplicates! We should dedupe before ranking.
  */
 export function generatePortmanteaus(s1, s2, topN = 50) {
     const candidates = [];

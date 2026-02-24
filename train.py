@@ -52,6 +52,10 @@ def build_vocab_from_files(file_paths):
     # Manually assign PAD to 0
     vocab["[PAD]"] = 0
 
+    # Sort before returning.
+    sorted_vocab_items = sorted(vocab.items(), key=lambda item: item[1])
+    vocab = dict(sorted_vocab_items)
+
     # Now len(vocab) will match exactly (Max_Index + 1)
     print(f"  Global Vocabulary Size: {len(vocab)}")
 
@@ -204,7 +208,8 @@ MAX_SEQ = 40
 # Build vocab
 vocab, inv_vocab = build_vocab_from_files(FILES)
 with open("vocab.json", "w") as f:
-    json.dump(vocab, f)
+    # TODO: Check if ensure_ascii works as intended.
+    json.dump(sorted_vocab, f, indent=4, ensure_ascii=False)
 
 (x_enc, x_dec), y_tgt = prepare_multitask_data(FILES, vocab, max_len=MAX_SEQ)
 
